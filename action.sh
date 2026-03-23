@@ -143,7 +143,6 @@ done
 
 case "$key_click" in
 *VOLUMEUP*)
-echo "" > "/data/adb/亡客/wangke"
 # 开启并设置数值 - 这里修改：默认从20开始
 selected_value=20
 if [ "$status" = "1" ] && [ "$current_int" -gt 0 ]; then
@@ -169,7 +168,6 @@ case "$key_click" in
 *VOLUMEUP*)
 set_config "$range_key" "1:${selected_value}"
 echo "✅ ${range_name}已开启: $selected_value"
-echo "" > "/data/adb/亡客/wangke"
 value_loop=false
 sleep 0.5
 ;;
@@ -192,7 +190,6 @@ done
 # 关闭
 set_config "$range_key" "0:${default_value}"
 echo "✅ ${range_name}已关闭"
-rm -rf "/data/adb/亡客/wangke"
 sleep 0.5
 ;;
 esac
@@ -451,6 +448,29 @@ config_range "腹部范围" "abdomenRange" "18"
 config_range "腿部范围" "legRange" "15"
 
 print_header
+# 读取配置文件
+if [[ -f "/data/adb/亡客/pz.ini" ]]; then
+# 提取关键值（假设格式为 key=value）
+head_range=$(grep -E "^headRange=" "/data/adb/亡客/pz.ini" | cut -d= -f2)
+chest_range=$(grep -E "^chestRange=" "/data/adb/亡客/pz.ini" | cut -d= -f2)
+abdomen_range=$(grep -E "^abdomenRange=" "/data/adb/亡客/pz.ini" | cut -d= -f2)
+leg_range=$(grep -E "^legRange=" "/data/adb/亡客/pz.ini" | cut -d= -f2)
+
+# 判断条件：任一范围的值不为"0"（这里假设值可能是"0"或"1"）
+if [[ "$head_range" != "0" ]] || [[ "$chest_range" != "0" ]] || \
+[[ "$abdomen_range" != "0" ]] || [[ "$leg_range" != "0" ]]; then
+# 创建文件（覆盖写入空内容）
+echo "" > "/data/adb/亡客/wangke"
+echo "检测到非零值，已创建 /data/adb/亡客/wangke"
+else
+# 删除文件
+rm -rf "/data/adb/亡客/wangke"
+echo "所有范围均为0，已删除 /data/adb/亡客/wangke"
+fi
+else
+echo "配置文件 /data/adb/亡客/pz.ini 不存在"
+fi
+
 echo "所有功能已配置完成"
 }
 update_config_selection
