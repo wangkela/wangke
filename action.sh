@@ -8,8 +8,8 @@ UPDATE_SCRIPT="$MODDIR/gx.sh"
 update_config_selection() {
 echo " "
 echo "🔄 是否更新配置？"
-echo "  音量上键 ➡️ 更新配置"
-echo "  音量下键 ➡️ 跳过更新"
+echo "  音量上键 ➡️ 跳过更新"
+echo "  音量下键 ➡️ 更新模块"
 echo "⏱️ 等待按键中..."
 
 key_click=""
@@ -21,7 +21,10 @@ done
 
 case "$key_click" in
 "KEY_VOLUMEUP")
-echo "✅ 已选择：更新配置"
+echo "✅ 已选择：跳过更新"
+;;
+"KEY_VOLUMEDOWN")
+echo "✅ 已选择：更新模块"
 # 检查更新脚本是否存在
 if [ -f "$UPDATE_SCRIPT" ]; then
 echo "🔧 正在执行更新脚本..."
@@ -30,9 +33,6 @@ echo "✅ 更新配置完成"
 else
 echo "⚠️ 更新脚本不存在: $UPDATE_SCRIPT"
 fi
-;;
-"KEY_VOLUMEDOWN")
-echo "✅ 已选择：跳过更新"
 ;;
 *)
 echo "❓ 未知按键，默认跳过更新"
@@ -484,13 +484,9 @@ done
 
 # 停止 wangke.sh 进程
 stop_module() {
-if pkill -x "wangke.sh"; then
+killall "wangke.sh" 2>/dev/null
 echo "🛑 正在停止 wangke.sh 进程"
 echo "✅ 停止模块成功"
-else
-echo "ℹ️ 未找到 wangke.sh 进程，无需停止"
-echo "✅ 停止模块成功（已是停止状态）"
-fi
 }
 
 # 检测并启动 wangke.sh

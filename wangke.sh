@@ -61,7 +61,7 @@ fi
 # 确保可读可执行
 chmod 777 "$SCRIPT_PATH" 2>/dev/null
 log "执行 $SCRIPT_PATH"
-sh "$SCRIPT_PATH" >> "$LOG_PATH" 2>&1
+"$SCRIPT_PATH" >> "$LOG_PATH" 2>&1
 touch "$EXEC_FLAG"
 log "脚本执行完成"
 }
@@ -165,6 +165,7 @@ last_state="running"
 fi
 else
 if [ "$last_state" = "running" ]; then
+rm -rf $LOG_PATH
 log "游戏状态变化: 退出"
 cleanup_flag
 fi
