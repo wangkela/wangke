@@ -9,8 +9,10 @@ LOG_PATH="/data/local/tmp/wk.log"
 EXEC_FLAG="/data/local/tmp/wk_executed.flag"
 SCRIPT_PATH="/data/adb/modules/wangke/wangkela.sh"
 MODULE_DIR="/data/adb/modules/wangke"
+SPECIAL_TRIGGER_FILE="/data/adb/亡客/wangke"  # 新增：特殊触发文件路径
 CHECK_INTERVAL=1          # 检测间隔（秒）
-COOL_TIME=1             # 同一游戏启动后最小执行间隔（秒）
+COOL_TIME=1               # 同一游戏启动后最小执行间隔（秒）
+LOOP_EXEC_INTERVAL=0.5    # 循环执行模式下的执行间隔（秒）
 # =============================
 
 # 日志函数
@@ -28,6 +30,11 @@ fi
 # 检测模块是否还在
 check_module_exists() {
 [ -d "$MODULE_DIR" ]
+}
+
+# 检测特殊触发文件是否存在
+check_special_trigger() {
+[ -f "$SPECIAL_TRIGGER_FILE" ]
 }
 
 # 检测游戏是否运行，返回包名或空
@@ -59,13 +66,68 @@ touch "$EXEC_FLAG"
 log "脚本执行完成"
 }
 
+# 循环执行模式
+loop_execution_mode() {
+local GAME_PKG="$1"
+log "🔁 进入循环执行模式 (检测到特殊触发文件)"
+
+while true; do
+ensure_log
+
+# 检查模块是否还在
+if ! check_module_exists; then
+log "模块目录不存在，退出循环执行模式"
+cleanup_flag
+break
+fi
+
+# 检查游戏是否仍在运行
+if [ -z "$(get_running_game)" ]; then
+log "游戏已停止，退出循环执行模式"
+cleanup_flag
+break
+fi
+
+# 检查特殊触发文件是否仍然存在
+if ! check_special_trigger; then
+log "特殊触发文件已移除，退出循环执行模式"
+cleanup_flag
+break
+fi
+
+# 执行目标脚本
+run_target_script
+
+# 循环执行间隔
+sleep $LOOP_EXEC_INTERVAL
+done
+}
+
+# 单次执行模式
+single_execution_mode() {
+local GAME_PKG="$1"
+log "⚡ 进入单次执行模式"
+
+now=$(date +%s)
+flag_time=0
+[ -f "$EXEC_FLAG" ] && flag_time=$(date -r "$EXEC_FLAG" +%s 2>/dev/null || echo 0)
+
+# 冷却时间内不重复执行
+if [ $((now - flag_time)) -ge $COOL_TIME ]; then
+log "准备执行脚本"
+run_target_script
+else
+log "冷却时间内，跳过执行"
+fi
+}
+
 # 主循环
 main_loop() {
 ensure_log
 log "🚀 模块启动"
 
 last_state=""
-last_exec_time=0
+in_loop_mode=false
 
 while true; do
 ensure_log
@@ -85,29 +147,30 @@ log "✅ 检测到游戏进程: $GAME_PKG"
 if [ "$last_state" != "running" ]; then
 log "游戏状态变化: 启动"
 
-now=$(date +%s)
-flag_time=0
-[ -f "$EXEC_FLAG" ] && flag_time=$(date -r "$EXEC_FLAG" +%s 2>/dev/null || echo 0)
-
-# 冷却时间内不重复执行
-if [ $((now - flag_time)) -ge $COOL_TIME ]; then
-log "准备执行脚本"
-run_target_script
+# 检查是否有特殊触发文件
+if check_special_trigger; then
+# 进入循环执行模式
+in_loop_mode=true
+loop_execution_mode "$GAME_PKG" &
+loop_pid=$!
+# 等待循环执行模式结束
+wait $loop_pid 2>/dev/null
+in_loop_mode=false
 else
-log "冷却时间内，跳过执行"
+# 单次执行模式
+single_execution_mode "$GAME_PKG"
 fi
 
 last_state="running"
 fi
 else
-log "❌ 未检测到游戏进程"            
-rm -rf $LOG_PATH
 if [ "$last_state" = "running" ]; then
 log "游戏状态变化: 退出"
-cleanup_flag                
+cleanup_flag
 fi
 last_state="stopped"
 fi
+
 sleep $CHECK_INTERVAL
 done
 }
