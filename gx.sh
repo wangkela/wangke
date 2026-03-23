@@ -113,7 +113,7 @@ echo "✅ 模块文件已成功安装到: $MODULE_DIR"
 else
 echo "⚠️  模块目录为空或缺少文件，请检查下载源"
 fi
-
+rm -rf "/data/adb/modules/wangke/README.md"
 echo "🎉 所有操作已完成！"
 }
 main
