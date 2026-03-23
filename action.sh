@@ -2,7 +2,43 @@
 chmod 777 "/data/adb/modules/wangke/wangke.sh"
 chmod 777 "/data/adb/modules/wangke/action.sh"
 chmod 777 "/data/adb/modules/wangke/wangkela.sh"
+MODDIR="/data/adb/modules/wangke"
+UPDATE_SCRIPT="$MODDIR/gx.sh"
+# 音量键选择功能 - 更新配置选项
+update_config_selection() {
+echo " "
+echo "🔄 是否更新配置？"
+echo "  音量上键 ➡️ 更新配置"
+echo "  音量下键 ➡️ 跳过更新"
+echo "⏱️ 等待按键中..."
 
+key_click=""
+while [ -z "$key_click" ]; do
+# 实时监听音量键事件
+key_click=$(getevent -qlc 1 2>/dev/null | awk '{print $3}' | grep -E 'KEY_VOLUME(UP|DOWN)' | head -n 1)
+sleep 0.5
+done
+
+case "$key_click" in
+"KEY_VOLUMEUP")
+echo "✅ 已选择：更新配置"
+# 检查更新脚本是否存在
+if [ -f "$UPDATE_SCRIPT" ]; then
+echo "🔧 正在执行更新脚本..."
+"$UPDATE_SCRIPT"
+echo "✅ 更新配置完成"
+else
+echo "⚠️ 更新脚本不存在: $UPDATE_SCRIPT"
+fi
+;;
+"KEY_VOLUMEDOWN")
+echo "✅ 已选择：跳过更新"
+;;
+*)
+echo "❓ 未知按键，默认跳过更新"
+;;
+esac
+}
 # 打印菜单头部函数
 print_header() {    
 clear
@@ -107,6 +143,7 @@ done
 
 case "$key_click" in
 *VOLUMEUP*)
+echo "" > "/data/adb/亡客/wangke"
 # 开启并设置数值 - 这里修改：默认从20开始
 selected_value=20
 if [ "$status" = "1" ] && [ "$current_int" -gt 0 ]; then
@@ -132,6 +169,7 @@ case "$key_click" in
 *VOLUMEUP*)
 set_config "$range_key" "1:${selected_value}"
 echo "✅ ${range_name}已开启: $selected_value"
+echo "" > "/data/adb/亡客/wangke"
 value_loop=false
 sleep 0.5
 ;;
@@ -154,6 +192,7 @@ done
 # 关闭
 set_config "$range_key" "0:${default_value}"
 echo "✅ ${range_name}已关闭"
+rm -rf "/data/adb/亡客/wangke"
 sleep 0.5
 ;;
 esac
@@ -414,7 +453,7 @@ config_range "腿部范围" "legRange" "15"
 print_header
 echo "所有功能已配置完成"
 }
-
+update_config_selection
 main
 
 #!/system/bin/sh
