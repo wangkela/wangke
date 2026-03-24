@@ -65,8 +65,7 @@ echo "✅ 已选择：更新模块"
 if [ -f "$UPDATE_SCRIPT" ]; then
 echo "🔧 正在执行更新脚本..."
 "$UPDATE_SCRIPT"
-echo "✅ 更新配置完成"
-killall "action.sh" 2>/dev/null
+killall "action.sh" 2>/dev/null && echo "✅ 更新模块成功"
 else
 echo "⚠️ 更新脚本不存在: $UPDATE_SCRIPT"
 fi
