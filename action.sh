@@ -303,7 +303,6 @@ key_click=$(get_volume_key)
 case "$key_click" in
 "KEY_VOLUMEUP")
 echo "✅ 已选择：使用上次配置"
-print_header
 return 0
 ;;
 *)
@@ -465,4 +464,5 @@ echo "📦 WangKe 模块控制脚本"
 echo "------------------------"
 update_config_selection
 main
+sleep 0.5
 start_control_module
