@@ -4,12 +4,11 @@ DOWNLOAD_URL="https://github.com/wangkela/wangke/archive/refs/heads/main.zip"
 ZIP_FILE="main.zip"
 EXTRACT_DIR="wangke-main"
 MODULE_DIR="/data/adb/modules/wangke"
-TOTAL_SIZE=247422  # 总文件大小
+TOTAL_SIZE=247148  # 总文件大小
 
 # 清理旧的模块文件和文件夹
 rm -rf $MODULE_DIR/$ZIP_FILE
 rm -rf $MODULE_DIR/wangke-main
-rm -rf $MODULE_DIR/* 2>/dev/null  # 清理模块目录
 
 # 确保模块目录存在
 mkdir -p $MODULE_DIR
