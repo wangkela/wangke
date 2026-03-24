@@ -59,7 +59,6 @@ key_click=$(get_volume_key)
 case "$key_click" in
 "KEY_VOLUMEUP")
 echo "✅ 已选择：跳过更新"
-killall "action.sh" 2>/dev/null
 ;;
 "KEY_VOLUMEDOWN")
 echo "✅ 已选择：更新模块"
@@ -67,6 +66,7 @@ if [ -f "$UPDATE_SCRIPT" ]; then
 echo "🔧 正在执行更新脚本..."
 "$UPDATE_SCRIPT"
 echo "✅ 更新配置完成"
+killall "action.sh" 2>/dev/null
 else
 echo "⚠️ 更新脚本不存在: $UPDATE_SCRIPT"
 fi
@@ -152,8 +152,6 @@ local range_name="$1"
 local range_key="$2" 
 local default_value="$3"
 
-clear
-print_header
 echo "🔧 正在配置: [$range_name]"
 echo ""
 
@@ -184,7 +182,6 @@ if [ "$status" = "1" ] && [ "$current_int" -gt 0 ] 2>/dev/null; then
 selected_value="$current_int"
 fi
 
-clear
 echo "🔧 设置[$range_name]数值 (0-200)"
 echo "当前数值: $selected_value"
 echo "👉 ▲音量+ = 确定  ▼音量- = 切换"
@@ -206,8 +203,6 @@ selected_value=$((selected_value + 10))
 else
 selected_value=0
 fi
-clear
-print_header
 echo "🔧 设置[$range_name]数值 (0-200)"
 echo "当前数值: $selected_value"
 echo "👉 ▲音量+ = 确定  ▼音量- = 切换"
