@@ -9,14 +9,6 @@ MODDIR="/data/adb/modules/wangke"
 UPDATE_SCRIPT="$MODDIR/gx.sh"
 CONFIG_FILE="/data/adb/亡客/pz.ini"
 
-countdown_stop() {
-echo "⏳ 1秒后停止模块运行..."
-for i in 1; do
-echo "$i 秒后停止模块运行"
-sleep 1
-done
-}
-
 # 简化的按键监听函数
 get_volume_key() {
 # 设置超时（6秒无操作）
@@ -73,8 +65,7 @@ echo "✅ 已选择：更新模块"
 if [ -f "$UPDATE_SCRIPT" ]; then
 echo "🔧 正在执行更新脚本..."
 "$UPDATE_SCRIPT"
-echo "✅ 更新模块成功"
-killall "action.sh" 2>/dev/null
+killall "action.sh" 2>/dev/null && echo "✅ 更新模块成功"
 else
 echo "⚠️ 更新脚本不存在: $UPDATE_SCRIPT"
 fi
@@ -464,10 +455,10 @@ echo "✅ wangke.sh 正在运行"
 else
 echo "🚀 正在启动 wangke.sh..."
 "/data/adb/modules/wangke/wangke.sh" &
-sleep 0.3
+sleep 0.5
 if pgrep -f "wangke.sh" > /dev/null; then
 echo "✅ 启动成功"
-countdown_stop
+
 else
 echo "❌ 启动失败"
 fi
@@ -476,7 +467,7 @@ fi
 *)
 echo "✅ 已选择：停止模块"
 killall "wangke.sh" 2>/dev/null && echo "✅ 停止模块成功"
-countdown_stop
+
 ;;
 esac
 sleep 0.5
