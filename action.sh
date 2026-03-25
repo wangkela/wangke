@@ -75,6 +75,7 @@ echo "🔧 正在执行更新脚本..."
 "$UPDATE_SCRIPT"
 echo "✅ 更新模块成功"
 countdown_stop
+esac
 else
 echo "⚠️ 更新脚本不存在: $UPDATE_SCRIPT"
 fi
