@@ -65,7 +65,7 @@ echo "✅ 已选择：更新模块"
 if [ -f "$UPDATE_SCRIPT" ]; then
 echo "🔧 正在执行更新脚本..."
 "$UPDATE_SCRIPT"
-killall "action.sh" 2>/dev/null && echo "✅ 更新模块成功"
+gx=0
 else
 echo "⚠️ 更新脚本不存在: $UPDATE_SCRIPT"
 fi
@@ -476,7 +476,13 @@ sleep 0.5
 # 主执行流程
 echo "📦 WangKe 模块控制脚本"
 echo "------------------------"
+gx=0
 update_config_selection
+if [ "$gx" -ne 1 ]; then
 main
 sleep 0.5
 start_control_module
+fi
+else
+echo "退出"
+done
