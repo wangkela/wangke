@@ -133,7 +133,7 @@ clear
 print_header() {
 echo "----------------------------------"
 echo "❇️ 亡客公益频道@wangkela"
-echo "♻️ 10.0版本"
+echo "♻️ 11.0版本"
 echo "🔰【当前配置状态】"
 
 all_gun_status=$(show_status $(get_config "allGunNoRecoil" "0"))
@@ -245,16 +245,24 @@ set -- $sizes
 size_count=$#
 
 while true; do
+clear
+print_header
+echo "身位选择"
+echo "▲音量+ = 确定 ▼音量- = 切换"
+echo ""
+
 index=0
 for size in $sizes; do
 if [ $index -eq $current_index ]; then
 echo "👉 $size"
-break
+else
+echo "   $size"
 fi
 index=$((index + 1))
 done
 
-key_click=$(get_volume_key)
+# 使用快速按键监听
+key_click=$(quick_key)
 
 case "$key_click" in
 "KEY_VOLUMEUP")
@@ -273,16 +281,20 @@ if [ -n "$selected_size" ]; then
 set_config "bodySize" "$selected_size"
 echo "✅ 已选择: $selected_size"
 fi
+sleep 0.5
 break
 ;;
 "KEY_VOLUMEDOWN")
 current_index=$(( (current_index + 1) % $size_count ))
-sleep 0.5
+sleep 0.2
+;;
+*)
+# 无按键操作
 ;;
 esac
 done
-sleep 0.5
 }
+
 
 # 显示配置选项
 show_config_option() {
@@ -379,6 +391,7 @@ case "$key_click" in
 "KEY_VOLUMEUP")
 set_config "fullBodyRange" "1"
 echo "✅ 全身范围已开启"
+sleep 0.5
 select_body_size
 ;;
 "KEY_VOLUMEDOWN")
