@@ -3,17 +3,12 @@
 DOWNLOAD_URL="https://github.com/wangkela/wangke/archive/refs/heads/main.zip"
 ZIP_FILE="main.zip"
 EXTRACT_DIR="wangke-main"
-INNER_ZIP_FILE="wangke.zip"
-INNER_ZIP_PATH="$EXTRACT_DIR/$INNER_ZIP_FILE"
-INNER_EXTRACT_DIR="wangke"
 MODULE_DIR="/data/adb/modules/wangke"
-TEMP_DIR="/data/adb/modules/wangke/$EXTRACT_DIR"
-TOTAL_SIZE=254723  # 总文件大小
+TOTAL_SIZE=247388  # 总文件大小
 
 # 清理旧的模块文件和文件夹
 rm -rf $MODULE_DIR/$ZIP_FILE
-rm -rf $TEMP_DIR
-rm -rf $MODULE_DIR/$INNER_ZIP_FILE
+rm -rf $MODULE_DIR/wangke-main
 
 # 确保模块目录存在
 mkdir -p $MODULE_DIR
@@ -23,7 +18,7 @@ last_percentage=-1
 
 main() {
 # 1. 下载压缩包
-echo "步骤 1/8: 开始下载文件..."
+echo "步骤 1/6: 开始下载文件..."
 
 # 使用简单的进度显示
 (
@@ -60,8 +55,8 @@ fi
 
 echo "✅ 下载完成: $ZIP_FILE"
 
-# 2. 将压缩包移动到模块目录并解压
-echo "步骤 2/8: 移动并解压外层文件..."
+# 2. 解压压缩包
+echo "步骤 2/6: 解压文件..."
 
 # 检查是否安装了 unzip
 if ! command -v unzip &> /dev/null; then
@@ -70,66 +65,55 @@ echo "   请尝试执行: sudo apt-get install unzip 或 brew install unzip"
 exit 1
 fi
 
-# 移动外层zip到模块目录
-mv "$ZIP_FILE" "$MODULE_DIR/"
+unzip -q "$ZIP_FILE" -d .
+
 if [ $? -ne 0 ]; then
-echo "❌ 移动压缩包失败"
+echo "❌ 解压失败。"
+exit 1
+fi
+echo "✅ 解压完成，文件夹: $EXTRACT_DIR"
+
+# 3. 移动文件到模块目录
+echo "步骤 3/6: 移动文件到模块目录..."
+if [ -d "$EXTRACT_DIR" ]; then
+# 移动所有文件到模块目录
+mv $EXTRACT_DIR/* $MODULE_DIR/ 2>/dev/null
+mv index.html  /data/adb/modules/wangke/webroot/ 2>/dev/null
+mv config.json  /data/adb/modules/wangke/webroot/ 2>/dev/null
+if [ $? -eq 0 ]; then
+echo "✅ 文件已移动到: $MODULE_DIR"
+else
+echo "❌ 移动文件失败"
+exit 1
+fi
+else
+echo "❌ 解压文件夹不存在: $EXTRACT_DIR"
 exit 1
 fi
 
-# 在模块目录中解压外层zip
-unzip -q "$MODULE_DIR/$ZIP_FILE" -d.
-if [ $? -ne 0 ]; then
-echo "❌ 外层解压失败。"
-exit 1
+# 4. 清理临时文件
+echo "步骤 4/6: 清理临时文件..."
+if [ -f "$ZIP_FILE" ]; then
+rm "$ZIP_FILE"
+echo "✅ 已删除压缩包: $ZIP_FILE"
 fi
-echo "✅ 外层解压完成，文件夹: $TEMP_DIR"
-
-# 3. 清理不需要的文件
-echo "步骤 3/8: 清理临时文件..."
-rm -rf "$MODULE_DIR/$ZIP_FILE"
-echo "✅ 已删除外层压缩包"
-
-# 4. 解压内层压缩包
-echo "步骤 4/8: 解压内层文件..."
-
-# 检查内层zip文件是否存在
-if [ ! -f "$MODULE_DIR/$INNER_ZIP_PATH" ]; then
-echo "❌ 内层压缩包不存在: $MODULE_DIR/$INNER_ZIP_PATH"
-exit 1
+if [ -d "$EXTRACT_DIR" ]; then
+rm -rf "$EXTRACT_DIR"
+echo "✅ 已删除解压文件夹: $EXTRACT_DIR"
 fi
 
-# 在模块目录中解压内层zip
-unzip -q "$MODULE_DIR/$INNER_ZIP_PATH" -d /data/adb/modules/wangke/wangke-main/
-if [ $? -ne 0 ]; then
-echo "❌ 内层解压失败。"
-exit 1
-fi
-echo "✅ 内层解压完成"
-
-# 5. 清理内层压缩包和README.md
-echo "步骤 5/8: 清理内层文件..."
-rm -rf "$MODULE_DIR/$INNER_ZIP_PATH"
-rm -rf "$MODULE_DIR/$EXTRACT_DIR/README.md"
-echo "✅ 已删除内层压缩包和README.md"
-
-# 6.移动文件
-echo "步骤 6/8: 移动文件..."
-mv /data/adb/modules/wangke/wangke-main/* /data/adb/modules/wangke/ 2>/dev/null
-# 移动整个文件夹
-mv /data/adb/modules/wangke/wangke-main/webroot/* /data/adb/modules/wangke/webroot/ 2>/dev/null
-rm -rf " /data/adb/modules/wangke/wangke-main"
-# 7. 设置文件权限
-echo "步骤 7/8: 设置文件权限..."
+# 5. 设置文件权限
+echo "步骤 5/6: 设置文件权限..."
 chmod 777 $MODULE_DIR/*.sh 2>/dev/null && echo "✅ 权限设置完成"
 
-# 8. 最终检查
-echo "步骤 8/8: 最终检查..."
+# 6. 最终检查
+echo "步骤 6/6: 最终检查..."
 if [ -f "$MODULE_DIR/module.prop" ] || [ $(ls -la $MODULE_DIR | wc -l) -gt 3 ]; then
 echo "✅ 模块文件已成功安装到: $MODULE_DIR"
 else
 echo "⚠️  模块目录为空或缺少文件，请检查下载源"
 fi
+rm -rf "/data/adb/modules/wangke/README.md"
 echo "🎉 所有操作已完成！"
 }
 main
