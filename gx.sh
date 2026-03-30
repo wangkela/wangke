@@ -78,8 +78,6 @@ echo "步骤 3/6: 移动文件到模块目录..."
 if [ -d "$EXTRACT_DIR" ]; then
 # 移动所有文件到模块目录
 mv $EXTRACT_DIR/* $MODULE_DIR/ 2>/dev/null
-mv index.html  /data/adb/modules/wangke/webroot/ 2>/dev/null
-mv config.json  /data/adb/modules/wangke/webroot/ 2>/dev/null
 if [ $? -eq 0 ]; then
 echo "✅ 文件已移动到: $MODULE_DIR"
 else
@@ -90,6 +88,8 @@ else
 echo "❌ 解压文件夹不存在: $EXTRACT_DIR"
 exit 1
 fi
+mv index.html /data/adb/modules/wangke/webroot/ 2>/dev/null
+mv config.json /data/adb/modules/wangke/webroot/ 2>/dev/null
 
 # 4. 清理临时文件
 echo "步骤 4/6: 清理临时文件..."
