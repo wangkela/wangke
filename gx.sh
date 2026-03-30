@@ -8,7 +8,7 @@ INNER_ZIP_PATH="$EXTRACT_DIR/$INNER_ZIP_FILE"
 INNER_EXTRACT_DIR="wangke"
 MODULE_DIR="/data/adb/modules/wangke"
 TEMP_DIR="/data/adb/modules/wangke/$EXTRACT_DIR"
-TOTAL_SIZE=253052  # 总文件大小
+TOTAL_SIZE=254723  # 总文件大小
 
 # 清理旧的模块文件和文件夹
 rm -rf $MODULE_DIR/$ZIP_FILE
