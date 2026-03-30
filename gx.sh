@@ -12,7 +12,7 @@ rm -rf $MODULE_DIR/wangke-main
 
 # 确保模块目录存在
 mkdir -p $MODULE_DIR
-
+mkdir -p "/data/adb/modules/wangke/webroot/"
 # 进度变量
 last_percentage=-1
 
