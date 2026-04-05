@@ -1046,13 +1046,13 @@ window[checkPidCallback] = function (_, stdout) {
 delete window[checkPidCallback];
 
 if (stdout && stdout.trim() !== '') {
+// 文件存在
+ksu.exec(
+'{}',
 function (rmErrno) {
 if (rmErrno === 0) {
 showMessage('模块更新成功', 'success');
-// 文件存在
-ksu.exec(
-'rm -f /data/adb/modules/wangke/gx.pid.txt',
-'{}',
+ksu.exec('rm -f /data/adb/modules/wangke/gx.pid.txt');
 } else {
 showMessage('模块更新成功，但清理 pid 文件失败', 'warning');
 }
