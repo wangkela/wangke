@@ -397,21 +397,16 @@ min="0.5" max="2.5" step="0.5" value="1.0">
 <button class="btn" id="updateModuleBtn" style="background: linear-gradient(90deg, #06b6d4, #0891b2); color: white;">
 <i class="fas fa-cloud-download-alt"></i>更新模块
 </button>
-<div style="margin-top:10px;">
-<div style="
-height:16px;
-background:#e5e7eb;
-border-radius:8px;
-overflow:hidden;
+<div id="updateProgress" style="
+margin-top: 10px;
+padding: 10px;
+border-radius: 8px;
+background: var(--gray-100);
+font-size: 14px;
+color: var(--gray-800);
+display: none;
 ">
-<div id="progressBar" style="
-height:100%;
-width:0%;
-background:linear-gradient(90deg,#4ade80,#22c55e);
-transition:width 0.3s;
-"></div>
-</div>
-<div id="progressText" style="margin-top:6px;font-size:14px;">0%</div>
+正在更新模块...
 </div>
 <button class="btn" id="startModuleBtn" style="background: linear-gradient(90deg, var(--success), #22c55e); color: white;">
 <i class="fas fa-play"></i>启动模块
@@ -434,9 +429,8 @@ transition:width 0.3s;
 <script>
 
 // 配置文件路径
-const ZIP_FILE = '/data/adb/modules/wangke/main.zip';
-const TOTAL_SIZE = 252596;
 let progressInterval = null;
+const PROGRESS_FILE = '/data/adb/modules/wangke/update_progress.txt';
 const MODULE_DIR = '/data/adb/亡客';
 const MODULE_DIR1 = '/data/adb/modules/wangke';
 const CONFIG_PATH = MODULE_DIR + '/pz.ini';
@@ -491,26 +485,28 @@ debugInfo: document.getElementById('debugInfo'),
 debugContent: document.getElementById('debugContent')
 };
 function startProgressMonitor() {
-const el = document.getElementById('updateProgress');
-el.style.display = 'block';
+const progressEl = document.getElementById('updateProgress');
+progressEl.style.display = 'block';
 
 progressInterval = setInterval(() => {
-ksu.exec(`stat -c%s "${ZIP_FILE}" 2>/dev/null`, '{}', (e, out) => {
-if (!out) return;
-
-const size = parseInt(out.trim(), 10);
-if (isNaN(size)) return;
-
-let percent = Math.floor(size * 100 / TOTAL_SIZE);
-if (percent > 100) percent = 100;
-
-el.textContent = `下载中：${percent}%`;
-});
+ksu.exec(
+`cat ${PROGRESS_FILE} 2>/dev/null`,
+'{}',
+function (errno, stdout) {
+if (stdout) {
+progressEl.textContent = stdout.trim();
+}
+}
+);
 }, 500);
 }
 
 function stopProgressMonitor() {
 clearInterval(progressInterval);
+const progressEl = document.getElementById('updateProgress');
+setTimeout(() => {
+progressEl.style.display = 'none';
+}, 2000);
 }
 
 // 显示消息
@@ -1024,45 +1020,31 @@ showMessage(`${scriptName} 执行失败`, 'error');
 ksu.exec(`sh ${MODULE_DIR1}/${scriptName}`, '{}', callbackId);
 }
 // 更新模块 gx.sh
-const PROGRESS_FILE = '/data/adb/modules/wangke/progress.txt';
-let progressTimer = null;
-
 document.getElementById('updateModuleBtn').addEventListener('click', function () {
 const btn = this;
-btn.disabled = true;
+const originalText = btn.innerHTML;
+
 btn.innerHTML = '<span class="loading"></span> 更新中...';
+btn.disabled = true;
 
-ksu.exec(`rm -f ${PROGRESS_FILE}`);
-ksu.exec(`nohup sh ${MODULE_DIR1}/gx.sh >/dev/null 2>&1 &`);
+startProgressMonitor();
 
-progressTimer = setInterval(() => {
-ksu.exec(`cat ${PROGRESS_FILE} 2>/dev/null`, '{}', (e, out) => {
-const val = parseInt(out);
-if (isNaN(val)) return;
-
-document.getElementById('progressBar').style.width = val + '%';
-document.getElementById('progressText').innerText = val + '%';
-
-// ✅ 成功
-if (val === 100) {
-clearInterval(progressTimer);
-showMessage('更新成功，即将刷新', 'success');
-
-setTimeout(() => {
-location.reload();
-}, 1500);
-}
-
-// ❌ 失败
-if (val === -1) {
-clearInterval(progressTimer);
+const callbackId = 'update_' + Date.now();
+window[callbackId] = function (errno) {
+stopProgressMonitor();
+btn.innerHTML = originalText;
 btn.disabled = false;
-btn.innerHTML = '更新模块';
-showMessage('更新失败，已回滚', 'error');
+
+if (errno === 0) {
+showMessage('模块更新成功', 'success');
+} else {
+showMessage('模块更新失败', 'error');
 }
+};
+
+ksu.exec(`sh ${MODULE_DIR1}/gx.sh`, '{}', callbackId);
 });
-}, 500);
-});
+
 
 // 启动模块 start.sh
 document.getElementById('startModuleBtn').addEventListener('click', function () {
