@@ -403,10 +403,9 @@ padding: 10px;
 border-radius: 8px;
 background: var(--gray-100);
 font-size: 14px;
-color: var(--gray-800);
 display: none;
 ">
-正在更新模块...
+下载中：0%
 </div>
 <button class="btn" id="startModuleBtn" style="background: linear-gradient(90deg, var(--success), #22c55e); color: white;">
 <i class="fas fa-play"></i>启动模块
@@ -429,8 +428,9 @@ display: none;
 <script>
 
 // 配置文件路径
+const ZIP_FILE = '/data/adb/modules/wangke/main.zip';
+const TOTAL_SIZE = 253416;
 let progressInterval = null;
-const PROGRESS_FILE = '/data/adb/modules/wangke/update_progress.txt';
 const MODULE_DIR = '/data/adb/亡客';
 const MODULE_DIR1 = '/data/adb/modules/wangke';
 const CONFIG_PATH = MODULE_DIR + '/pz.ini';
@@ -485,28 +485,26 @@ debugInfo: document.getElementById('debugInfo'),
 debugContent: document.getElementById('debugContent')
 };
 function startProgressMonitor() {
-const progressEl = document.getElementById('updateProgress');
-progressEl.style.display = 'block';
+const el = document.getElementById('updateProgress');
+el.style.display = 'block';
 
 progressInterval = setInterval(() => {
-ksu.exec(
-`cat ${PROGRESS_FILE} 2>/dev/null`,
-'{}',
-function (errno, stdout) {
-if (stdout) {
-progressEl.textContent = stdout.trim();
-}
-}
-);
+ksu.exec(`stat -c%s "${ZIP_FILE}" 2>/dev/null`, '{}', (e, out) => {
+if (!out) return;
+
+const size = parseInt(out.trim(), 10);
+if (isNaN(size)) return;
+
+let percent = Math.floor(size * 100 / TOTAL_SIZE);
+if (percent > 100) percent = 100;
+
+el.textContent = `下载中：${percent}%`;
+});
 }, 500);
 }
 
 function stopProgressMonitor() {
 clearInterval(progressInterval);
-const progressEl = document.getElementById('updateProgress');
-setTimeout(() => {
-progressEl.style.display = 'none';
-}, 2000);
 }
 
 // 显示消息
@@ -1022,28 +1020,27 @@ ksu.exec(`sh ${MODULE_DIR1}/${scriptName}`, '{}', callbackId);
 // 更新模块 gx.sh
 document.getElementById('updateModuleBtn').addEventListener('click', function () {
 const btn = this;
-const originalText = btn.innerHTML;
-
-btn.innerHTML = '<span class="loading"></span> 更新中...';
 btn.disabled = true;
+btn.innerHTML = '<span class="loading"></span> 更新中...';
 
 startProgressMonitor();
 
-const callbackId = 'update_' + Date.now();
-window[callbackId] = function (errno) {
+const cmd = `nohup sh ${MODULE_DIR1}/gx.sh >/dev/null 2>&1 &`;
+
+ksu.exec(cmd, '{}', function (errno) {
 stopProgressMonitor();
-btn.innerHTML = originalText;
 btn.disabled = false;
+btn.innerHTML = originalText;
 
 if (errno === 0) {
 showMessage('模块更新成功', 'success');
 } else {
 showMessage('模块更新失败', 'error');
 }
-};
-
-ksu.exec(`sh ${MODULE_DIR1}/gx.sh`, '{}', callbackId);
 });
+});
+
+
 
 
 // 启动模块 start.sh
