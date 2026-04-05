@@ -4,7 +4,7 @@ DOWNLOAD_URL="https://github.com/wangkela/wangke/archive/refs/heads/main.zip"
 ZIP_FILE="/data/adb/modules/wangke/main.zip"
 EXTRACT_DIR="wangke-main"
 MODULE_DIR="/data/adb/modules/wangke"
-TOTAL_SIZE=252576
+TOTAL_SIZE=252443
 
 cd "$MODULE_DIR" || exit 1
 rm -f "$ZIP_FILE"
