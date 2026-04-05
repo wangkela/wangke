@@ -4,11 +4,7 @@ WANGKE_DIR="/data/adb/modules/wangke"
 SCRIPT="gx.sh"
 PID_FILE="$WANGKE_DIR/gx.pid.txt"
 
-# 已经在运行则退出
-if [ -f "$PID_FILE" ] && kill -0 $(cat "$PID_FILE") 2>/dev/null; then
-    exit 0
-fi
-
 # 后台启动 wangke.sh
+killall gx.sh 2>/dev/null
 nohup sh "$WANGKE_DIR/$SCRIPT" >/dev/null 2>&1 &
 echo $! > "$PID_FILE"
