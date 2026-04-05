@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>亡客控制面板 v12.0</title>
+<title>亡客控制面板 v13.0</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
 /* 保持原有的CSS样式不变 */
@@ -231,7 +231,7 @@ animation: spin 1s ease-in-out infinite;
 <h1><i class="fas fa-gamepad"></i>亡客控制面板</h1>
 <p class="subtitle">公告：亡客公益频道 @wangkela</p>
 <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
-<span class="version-badge">版本 12.0</span>
+<span class="version-badge">版本 13.0</span>
 </div>
 </div>
 
@@ -392,6 +392,28 @@ min="0.5" max="2.5" step="0.5" value="1.0">
 <button class="btn" id="reloadBtn" style="background: var(--warning); color: white;">
 <i class="fas fa-sync-alt"></i>重新加载
 </button>
+<!-- 模块控制按钮 -->
+<div class="action-buttons" style="margin-top: 15px;">
+<button class="btn" id="updateModuleBtn" style="background: linear-gradient(90deg, #06b6d4, #0891b2); color: white;">
+<i class="fas fa-cloud-download-alt"></i>更新模块
+</button>
+<div id="updateProgress" style="
+margin-top: 10px;
+padding: 10px;
+border-radius: 8px;
+background: var(--gray-100);
+font-size: 14px;
+color: var(--gray-800);
+display: none;
+">
+正在更新模块...
+</div>
+<button class="btn" id="startModuleBtn" style="background: linear-gradient(90deg, var(--success), #22c55e); color: white;">
+<i class="fas fa-play"></i>启动模块
+</button>
+<button class="btn" id="stopModuleBtn" style="background: linear-gradient(90deg, var(--danger), #ef4444); color: white;">
+<i class="fas fa-stop"></i>停止模块
+</button>
 </div>
 
 <!-- 状态提示 -->
@@ -405,8 +427,12 @@ min="0.5" max="2.5" step="0.5" value="1.0">
 </div>
 
 <script>
+
 // 配置文件路径
+let progressInterval = null;
+const PROGRESS_FILE = '/data/adb/modules/wangke/update_progress.txt';
 const MODULE_DIR = '/data/adb/亡客';
+const MODULE_DIR1 = '/data/adb/modules/wangke';
 const CONFIG_PATH = MODULE_DIR + '/pz.ini';
 const WANGKE_FILE = MODULE_DIR + '/wangke';
 
@@ -458,6 +484,30 @@ reloadBtn: document.getElementById('reloadBtn'),
 debugInfo: document.getElementById('debugInfo'),
 debugContent: document.getElementById('debugContent')
 };
+function startProgressMonitor() {
+const progressEl = document.getElementById('updateProgress');
+progressEl.style.display = 'block';
+
+progressInterval = setInterval(() => {
+ksu.exec(
+`cat ${PROGRESS_FILE} 2>/dev/null`,
+'{}',
+function (errno, stdout) {
+if (stdout) {
+progressEl.textContent = stdout.trim();
+}
+}
+);
+}, 500);
+}
+
+function stopProgressMonitor() {
+clearInterval(progressInterval);
+const progressEl = document.getElementById('updateProgress');
+setTimeout(() => {
+progressEl.style.display = 'none';
+}, 2000);
+}
 
 // 显示消息
 function showMessage(message, type = 'success') {
@@ -949,6 +999,87 @@ await loadConfigFromFile();
 this.innerHTML = originalText;
 this.disabled = false;
 });
+function execShell(scriptName, btn, loadingText, successMsg) {
+const originalText = btn.innerHTML;
+btn.innerHTML = `<span class="loading"></span> ${loadingText}`;
+btn.disabled = true;
+
+const callbackId = 'shell_' + Date.now();
+window[callbackId] = function (errno) {
+delete window[callbackId];
+btn.innerHTML = originalText;
+btn.disabled = false;
+
+if (errno === 0) {
+showMessage(successMsg, 'success');
+} else {
+showMessage(`${scriptName} 执行失败`, 'error');
+}
+};
+
+ksu.exec(`sh ${MODULE_DIR1}/${scriptName}`, '{}', callbackId);
+}
+// 更新模块 gx.sh
+document.getElementById('updateModuleBtn').addEventListener('click', function () {
+const btn = this;
+const originalText = btn.innerHTML;
+
+btn.innerHTML = '<span class="loading"></span> 更新中...';
+btn.disabled = true;
+
+startProgressMonitor();
+
+const callbackId = 'update_' + Date.now();
+window[callbackId] = function (errno) {
+stopProgressMonitor();
+btn.innerHTML = originalText;
+btn.disabled = false;
+
+if (errno === 0) {
+showMessage('模块更新成功', 'success');
+} else {
+showMessage('模块更新失败', 'error');
+}
+};
+
+ksu.exec(`sh ${MODULE_DIR1}/gx.sh`, '{}', callbackId);
+});
+
+
+// 启动模块 start.sh
+document.getElementById('startModuleBtn').addEventListener('click', function () {
+const btn = this;
+const originalText = btn.innerHTML;
+btn.innerHTML = '<span class="loading"></span> 启动中...';
+btn.disabled = true;
+
+const cmd = `
+nohup sh /data/adb/modules/wangke/wangke.sh >/dev/null 2>&1 &
+echo $! > /data/adb/modules/wangke/wangke.sh.pid
+`;
+
+const callbackId = 'start_' + Date.now();
+window[callbackId] = function (errno) {
+delete window[callbackId];
+btn.innerHTML = originalText;
+btn.disabled = false;
+
+if (errno === 0) {
+showMessage('模块已启动', 'success');
+} else {
+showMessage('启动失败', 'error');
+}
+};
+
+ksu.exec(cmd, '{}', callbackId);
+});
+
+
+// 停止模块 stop.sh
+document.getElementById('stopModuleBtn').addEventListener('click', function () {
+execShell('stop.sh', this, '停止中...', '模块已停止');
+});
+
 }
 
 // 初始化

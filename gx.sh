@@ -4,7 +4,11 @@ DOWNLOAD_URL="https://github.com/wangkela/wangke/archive/refs/heads/main.zip"
 ZIP_FILE="main.zip"
 EXTRACT_DIR="wangke-main"
 MODULE_DIR="/data/adb/modules/wangke"
+PROGRESS_FILE="/data/adb/modules/wangke/update_progress.txt"
 TOTAL_SIZE=253416  # 总文件大小
+update_progress() {
+echo "$1" > "$PROGRESS_FILE"
+}
 
 # 清理旧的模块文件和文件夹
 rm -rf $MODULE_DIR/$ZIP_FILE
@@ -22,7 +26,13 @@ echo "步骤 1/6: 开始下载文件..."
 
 # 使用简单的进度显示
 (
-curl -L -o "$ZIP_FILE" "$DOWNLOAD_URL" --progress-bar
+curl -L -o "$ZIP_FILE" "$DOWNLOAD_URL" 2>&1 | while read -r line; do
+percent=$(echo "$line" | grep -oE '[0-9]+%' | tr -d '%')
+
+if [ -n "$percent" ]; then
+update_progress "下载中：$percent%"
+fi
+done
 ) &
 CURL_PID=$!
 
