@@ -1033,16 +1033,20 @@ ksu.exec(`nohup sh ${MODULE_DIR1}/gx.sh >/dev/null 2>&1 &`);
 
 // 监控完成标志
 updateInterval = setInterval(() => {
-ksu.exec(`[ -f ${MODULE_DIR1}/update.done ] && echo 1 || echo 0`, '{}', (e, out) => {
-if (out.trim() === '1') {
+ksu.exec(
+`cat ${MODULE_DIR1}/update.done 2>/dev/null`,
+'{}',
+(e, out) => {
+if (out && out.trim() !== '') {
 clearInterval(updateInterval);
 btn.disabled = false;
 btn.innerHTML = '更新模块';
-document.getElementById('updateProgress').textContent = '✅ 模块更新成功';
+document.getElementById('updateProgress').textContent =
+'✅ 模块更新成功';
 }
-});
+}
+);
 }, 500);
-});
 
 // 启动模块 start.sh
 document.getElementById('startModuleBtn').addEventListener('click', function () {
