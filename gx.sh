@@ -4,7 +4,7 @@ URL="https://github.com/wangkela/wangke/archive/refs/heads/main.zip"
 ZIP="/data/adb/modules/wangke/main.zip"
 PROGRESS="/data/adb/modules/wangke/progress.txt"
 BACKUP="/data/adb/modules/wangke/backup"
-TOTAL=253416
+TOTAL=252596
 
 # 备份旧模块
 mkdir -p "$BACKUP"
