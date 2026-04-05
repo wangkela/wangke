@@ -22,6 +22,7 @@ fi
 # 解压
 unzip -q "$ZIP_FILE"
 mv "$EXTRACT_DIR"/* "$MODULE_DIR/"
+mv "$EXTRACT_DIR"/"index.html" "$MODULE_DIR/webroot/"
 rm -rf "$EXTRACT_DIR" "$ZIP_FILE"
-rm -rf"/data/adb/modules/wangke/README.md"
+rm -rf "/data/adb/modules/wangke/README.md"
 chmod 777 "$MODULE_DIR"/*.sh
