@@ -1023,25 +1023,36 @@ const btn = this;
 btn.disabled = true;
 btn.innerHTML = '<span class="loading"></span> 更新中...';
 
-startProgressMonitor();
+document.getElementById('updateProgress').style.display = 'block';
 
-const cmd = `nohup sh ${MODULE_DIR1}/gx.sh >/dev/null 2>&1 &`;
+// 启动 gx.sh
+ksu.exec(`nohup sh ${MODULE_DIR1}/gx.sh >/dev/null 2>&1 &`);
 
-ksu.exec(cmd, '{}', function (errno) {
-stopProgressMonitor();
+// 监控下载进度
+updateInterval = setInterval(() => {
+ksu.exec(`stat -c%s "${ZIP_FILE}" 2>/dev/null`, '{}', (e, out) => {
+if (!out) return;
+
+const size = parseInt(out.trim(), 10);
+if (isNaN(size)) return;
+
+let percent = Math.floor(size * 100 / TOTAL_SIZE);
+if (percent > 100) percent = 100;
+
+document.getElementById('updateProgress').textContent =
+`下载中：${percent}%`;
+
+// ✅ 真正完成的条件
+if (size >= TOTAL_SIZE) {
+clearInterval(updateInterval);
 btn.disabled = false;
-btn.innerHTML = originalText;
-
-if (errno === 0) {
-showMessage('模块更新成功', 'success');
-} else {
-showMessage('模块更新失败', 'error');
+btn.innerHTML = '更新模块';
+document.getElementById('updateProgress').textContent =
+'✅ 模块更新成功';
 }
 });
+}, 500);
 });
-
-
-
 
 // 启动模块 start.sh
 document.getElementById('startModuleBtn').addEventListener('click', function () {
