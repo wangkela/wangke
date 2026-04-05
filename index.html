@@ -1023,26 +1023,34 @@ const btn = this;
 btn.disabled = true;
 btn.innerHTML = '<span class="loading"></span> 更新中...';
 
-document.getElementById('updateProgress').style.display = 'block';
+const progressEl = document.getElementById('updateProgress');
+progressEl.style.display = 'block';
 
-// 清除旧的完成标志
-ksu.exec(`rm -f ${MODULE_DIR1}/update.done`);
-
-// 启动下载
+// 启动下载（后台）
 ksu.exec(`nohup sh ${MODULE_DIR1}/gx.sh >/dev/null 2>&1 &`);
 
-// 监控完成标志
+// 监控文件大小
 updateInterval = setInterval(() => {
 ksu.exec(
-`cat ${MODULE_DIR1}/update.done 2>/dev/null`,
+`stat -c%s "${ZIP_FILE}" 2>/dev/null`,
 '{}',
 (e, out) => {
-if (out && out.trim() !== '') {
+if (!out) return;
+
+const size = parseInt(out.trim(), 10);
+if (isNaN(size)) return;
+
+let percent = Math.floor(size * 100 / TOTAL_SIZE);
+if (percent > 100) percent = 100;
+
+progressEl.textContent = `下载中：${percent}%`;
+
+// ✅ 唯一可信的成功条件
+if (size >= TOTAL_SIZE) {
 clearInterval(updateInterval);
 btn.disabled = false;
 btn.innerHTML = '更新模块';
-document.getElementById('updateProgress').textContent =
-'✅ 模块更新成功';
+progressEl.textContent = '✅ 模块更新成功';
 }
 }
 );
