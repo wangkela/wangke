@@ -397,15 +397,21 @@ min="0.5" max="2.5" step="0.5" value="1.0">
 <button class="btn" id="updateModuleBtn" style="background: linear-gradient(90deg, #06b6d4, #0891b2); color: white;">
 <i class="fas fa-cloud-download-alt"></i>更新模块
 </button>
-<div id="updateProgress" style="
-margin-top: 10px;
-padding: 10px;
-border-radius: 8px;
-background: var(--gray-100);
-font-size: 14px;
-display: none;
+<div style="margin-top:10px;">
+<div style="
+height:16px;
+background:#e5e7eb;
+border-radius:8px;
+overflow:hidden;
 ">
-下载中：0%
+<div id="progressBar" style="
+height:100%;
+width:0%;
+background:linear-gradient(90deg,#4ade80,#22c55e);
+transition:width 0.3s;
+"></div>
+</div>
+<div id="progressText" style="margin-top:6px;font-size:14px;">0%</div>
 </div>
 <button class="btn" id="startModuleBtn" style="background: linear-gradient(90deg, var(--success), #22c55e); color: white;">
 <i class="fas fa-play"></i>启动模块
@@ -1018,33 +1024,43 @@ showMessage(`${scriptName} 执行失败`, 'error');
 ksu.exec(`sh ${MODULE_DIR1}/${scriptName}`, '{}', callbackId);
 }
 // 更新模块 gx.sh
-const DONE_FILE = '/data/adb/modules/wangke/update.done';
+const PROGRESS_FILE = '/data/adb/modules/wangke/progress.txt';
+let progressTimer = null;
 
 document.getElementById('updateModuleBtn').addEventListener('click', function () {
 const btn = this;
 btn.disabled = true;
 btn.innerHTML = '<span class="loading"></span> 更新中...';
 
-const progressEl = document.getElementById('updateProgress');
-progressEl.style.display = 'block';
-progressEl.textContent = '下载中：0%';
-
-ksu.exec(`rm -f ${DONE_FILE}`);
+ksu.exec(`rm -f ${PROGRESS_FILE}`);
 ksu.exec(`nohup sh ${MODULE_DIR1}/gx.sh >/dev/null 2>&1 &`);
 
-updateInterval = setInterval(() => {
-ksu.exec(
-`cat ${DONE_FILE} 2>/dev/null`,
-'{}',
-(e, out) => {
-if (out && out.trim() === 'DONE') {
-clearInterval(updateInterval);
+progressTimer = setInterval(() => {
+ksu.exec(`cat ${PROGRESS_FILE} 2>/dev/null`, '{}', (e, out) => {
+const val = parseInt(out);
+if (isNaN(val)) return;
+
+document.getElementById('progressBar').style.width = val + '%';
+document.getElementById('progressText').innerText = val + '%';
+
+// ✅ 成功
+if (val === 100) {
+clearInterval(progressTimer);
+showMessage('更新成功，即将刷新', 'success');
+
+setTimeout(() => {
+location.reload();
+}, 1500);
+}
+
+// ❌ 失败
+if (val === -1) {
+clearInterval(progressTimer);
 btn.disabled = false;
 btn.innerHTML = '更新模块';
-progressEl.textContent = '✅ 模块更新成功';
+showMessage('更新失败，已回滚', 'error');
 }
-}
-);
+});
 }, 500);
 });
 
