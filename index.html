@@ -1018,6 +1018,8 @@ showMessage(`${scriptName} 执行失败`, 'error');
 ksu.exec(`sh ${MODULE_DIR1}/${scriptName}`, '{}', callbackId);
 }
 // 更新模块 gx.sh
+const DONE_FILE = '/data/adb/modules/wangke/update.done';
+
 document.getElementById('updateModuleBtn').addEventListener('click', function () {
 const btn = this;
 btn.disabled = true;
@@ -1025,28 +1027,17 @@ btn.innerHTML = '<span class="loading"></span> 更新中...';
 
 const progressEl = document.getElementById('updateProgress');
 progressEl.style.display = 'block';
+progressEl.textContent = '下载中：0%';
 
-// 启动下载（后台）
+ksu.exec(`rm -f ${DONE_FILE}`);
 ksu.exec(`nohup sh ${MODULE_DIR1}/gx.sh >/dev/null 2>&1 &`);
 
-// 监控文件大小
 updateInterval = setInterval(() => {
 ksu.exec(
-`stat -c%s "${ZIP_FILE}" 2>/dev/null`,
+`cat ${DONE_FILE} 2>/dev/null`,
 '{}',
 (e, out) => {
-if (!out) return;
-
-const size = parseInt(out.trim(), 10);
-if (isNaN(size)) return;
-
-let percent = Math.floor(size * 100 / TOTAL_SIZE);
-if (percent > 100) percent = 100;
-
-progressEl.textContent = `下载中：${percent}%`;
-
-// ✅ 唯一可信的成功条件
-if (size >= TOTAL_SIZE) {
+if (out && out.trim() === 'DONE') {
 clearInterval(updateInterval);
 btn.disabled = false;
 btn.innerHTML = '更新模块';
