@@ -1029,8 +1029,8 @@ btn.disabled = true;
 
 startProgressMonitor();
 
-const callbackId = 'update_' + Date.now();
-window[callbackId] = function (errno) {
+const updateCallback = 'update_' + Date.now();
+window[updateCallback] = function (errno) {
 stopProgressMonitor();
 btn.innerHTML = originalText;
 btn.disabled = false;
@@ -1040,42 +1040,39 @@ showMessage('模块更新失败（脚本执行异常）', 'error');
 return;
 }
 
-// 检测 gx.pid.txt 是否存在
+// 检测 gx.pid.txt 是否存在（正确方式）
 const checkPidCallback = 'checkpid_' + Date.now();
-window[checkPidCallback] = function (_, stdout) {
+window[checkPidCallback] = function (errno2) {
 delete window[checkPidCallback];
 
-if (stdout && stdout.trim() !== '') {
-// 文件存在
-ksu.exec(
-'{}',
-function (rmErrno) {
-if (rmErrno === 0) {
+if (errno2 === 0) {
+// 文件存在，更新成功
 showMessage('模块更新成功', 'success');
-ksu.exec('rm -f /data/adb/modules/wangke/gx.pid.txt');
-} else {
-showMessage('模块更新成功，但清理 pid 文件失败', 'warning');
-}
-}
+
+// 删除 pid 文件
+ksu.exec(
+'rm -f /data/adb/modules/wangke/gx.pid.txt',
+'{}',
+function () {}
 );
 } else {
-// 文件不存在
 showMessage('模块更新失败', 'error');
 }
 };
 
-// test -f 会返回空 stdout，但 errno=0 表示存在
 ksu.exec(
-'test -f /data/adb/modules/wangke/gx.pid.txt && echo exists',
+'[ -f /data/adb/modules/wangke/gx.pid.txt ]',
 '{}',
 checkPidCallback
 );
 };
 
-ksu.exec(`sh ${MODULE_DIR1}/gx1.sh`, '{}', callbackId);
+ksu.exec(
+'sh /data/adb/modules/wangke/gx1.sh',
+'{}',
+updateCallback
+);
 });
-
-
 
 // 启动模块 start.sh
 document.getElementById('startModuleBtn').addEventListener('click', function () {
