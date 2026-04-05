@@ -12,4 +12,3 @@ fi
 # 后台启动 wangke.sh
 nohup sh "$WANGKE_DIR/$SCRIPT" >/dev/null 2>&1 &
 echo $! > "$PID_FILE"
-rm -rf "/data/adb/modules/wangke/gx.pid.txt"
