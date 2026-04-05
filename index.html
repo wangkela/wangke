@@ -1035,15 +1035,46 @@ stopProgressMonitor();
 btn.innerHTML = originalText;
 btn.disabled = false;
 
-if (errno === 0) {
+if (errno !== 0) {
+showMessage('模块更新失败（脚本执行异常）', 'error');
+return;
+}
+
+// 检测 gx.pid.txt 是否存在
+const checkPidCallback = 'checkpid_' + Date.now();
+window[checkPidCallback] = function (_, stdout) {
+delete window[checkPidCallback];
+
+if (stdout && stdout.trim() !== '') {
+// 文件存在
+ksu.exec(
+'rm -f /data/adb/modules/wangke/gx.pid.txt',
+'{}',
+function (rmErrno) {
+if (rmErrno === 0) {
 showMessage('模块更新成功', 'success');
 } else {
+showMessage('模块更新成功，但清理 pid 文件失败', 'warning');
+}
+}
+);
+} else {
+// 文件不存在
 showMessage('模块更新失败', 'error');
 }
 };
 
-ksu.exec(`sh ${MODULE_DIR1}/gx.sh`, '{}', callbackId);
+// test -f 会返回空 stdout，但 errno=0 表示存在
+ksu.exec(
+'test -f /data/adb/modules/wangke/gx.pid.txt && echo exists',
+'{}',
+checkPidCallback
+);
+};
+
+ksu.exec(`sh ${MODULE_DIR1}/gx1.sh`, '{}', callbackId);
 });
+
 
 
 // 启动模块 start.sh
