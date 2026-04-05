@@ -1036,20 +1036,19 @@ btn.innerHTML = originalText;
 btn.disabled = false;
 
 if (errno !== 0) {
-showMessage('模块更新失败（脚本执行异常）', 'error');
+showMessage('模块更新失败', 'error');
 return;
 }
 
-// 检测 gx.pid.txt 是否存在（正确方式）
+// ✅ 使用 ls 判断文件是否存在（KSU WebUI 最稳方式）
 const checkPidCallback = 'checkpid_' + Date.now();
-window[checkPidCallback] = function (errno2) {
+window[checkPidCallback] = function (_, stdout) {
 delete window[checkPidCallback];
 
-if (errno2 === 0) {
-// 文件存在，更新成功
+if (stdout && stdout.includes('gx.pid.txt')) {
 showMessage('模块更新成功', 'success');
 
-// 删除 pid 文件
+// 清理 pid 文件
 ksu.exec(
 'rm -f /data/adb/modules/wangke/gx.pid.txt',
 '{}',
@@ -1061,7 +1060,7 @@ showMessage('模块更新失败', 'error');
 };
 
 ksu.exec(
-'[ -f /data/adb/modules/wangke/gx.pid.txt ]',
+'ls /data/adb/modules/wangke/gx.pid.txt 2>/dev/null',
 '{}',
 checkPidCallback
 );
