@@ -1099,7 +1099,6 @@ btn.disabled = true;
 
 const cmd = `
 nohup sh /data/adb/modules/wangke/wangke.sh >/dev/null 2>&1 &
-echo $! > /data/adb/modules/wangke/wangke.sh.pid
 `;
 
 const callbackId = 'start_' + Date.now();
@@ -1136,18 +1135,34 @@ return;
 
 initEventListeners();
 
+// ✅ 页面加载时执行 gx0.sh
+const gx0Callback = 'gx0_' + Date.now();
+window[gx0Callback] = function (errno) {
+delete window[gx0Callback];
+if (errno === 0) {
+console.log('gx0.sh 执行成功');
+} else {
+console.warn('gx0.sh 执行失败');
+}
+};
+
+ksu.exec(
+'sh /data/adb/modules/wangke/gx0.sh',
+'{}',
+gx0Callback
+);
+
 // 加载配置
 showMessage('正在加载配置...', 'info');
 await loadConfigFromFile();
 
-// ✅ 新增：页面加载完成后校验版本日期
+// ✅ 页面加载完成后校验版本状态（根据 gx 文件是否存在）
 const versionStatusEl = document.getElementById('versionStatus');
-const latestTime = Number(document.querySelector('meta[name="module-version-time"]').getAttribute('content'));
 const checkVersionCb = 'checkVer_' + Date.now();
 
 window[checkVersionCb] = function (_, stdout) {
-const localTime = parseInt(stdout.trim()) || 0;
-if (localTime >= latestTime) {
+// stdout 为空表示文件不存在，非空表示存在
+if (stdout && stdout.trim() !== '') {
 versionStatusEl.textContent = '已是最新版本';
 versionStatusEl.className = 'status-on';
 } else {
@@ -1157,7 +1172,7 @@ versionStatusEl.className = 'status-off';
 };
 
 ksu.exec(
-'cat /data/adb/modules/wangke/.update_success 2>/dev/null',
+'cat /data/adb/modules/wangke/gx 2>/dev/null',
 '{}',
 checkVersionCb
 );
