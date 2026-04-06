@@ -1036,6 +1036,7 @@ showMessage(`${scriptName} 执行失败`, 'error');
 
 ksu.exec(`sh ${MODULE_DIR1}/${scriptName}`, '{}', callbackId);
 }
+
 // 更新模块 gx.sh
 document.getElementById('updateModuleBtn').addEventListener('click', function () {
 const btn = this;
@@ -1135,26 +1136,27 @@ return;
 
 initEventListeners();
 
-// ✅ 页面加载时执行 gx0.sh
-const gx0Callback = 'gx0_' + Date.now();
-window[gx0Callback] = function (errno) {
-delete window[gx0Callback];
+// 加载配置
+showMessage('正在加载配置...', 'info');
+await loadConfigFromFile();
+
+const gx0Cb = 'gx0_' + Date.now();
+window[gx0Cb] = function (errno) {
+delete window[gx0Cb];
+console.log('gx0.sh errno:', errno);
+
 if (errno === 0) {
-console.log('gx0.sh 执行成功');
+showMessage('gx0 已执行', 'success');
 } else {
-console.warn('gx0.sh 执行失败');
+showMessage('gx0 执行失败', 'error');
 }
 };
 
 ksu.exec(
-'sh /data/adb/modules/wangke/gx0.sh',
+'cd /data/adb/modules/wangke && sh gx0.sh',
 '{}',
-gx0Callback
+gx0Cb
 );
-
-// 加载配置
-showMessage('正在加载配置...', 'info');
-await loadConfigFromFile();
 
 // ✅ 页面加载完成后校验版本状态（根据 gx 文件是否存在）
 const versionStatusEl = document.getElementById('versionStatus');
