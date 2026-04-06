@@ -1,1 +1,1 @@
-killall "wangke.sh"
+killall "wangke.sh" 2>/dev/null
