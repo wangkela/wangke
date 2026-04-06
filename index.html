@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 新增：用于存放最新版本的时间戳（Unix Time），更新时修改此值 -->
+<meta name="module-version-time" content="1700000000">
 <title>亡客控制面板 v13.0</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
@@ -58,6 +60,18 @@ display: inline-block; background: rgba(255,255,255,0.2);
 padding: 4px 12px; border-radius: 20px; font-size: 14px;
 font-weight: 600; margin-top: 5px;
 }
+/* 新增：版本状态指示器样式 */
+#versionStatus {
+display: inline-block;
+padding: 4px 12px;
+border-radius: 20px;
+font-size: 14px;
+font-weight: 600;
+margin-left: 10px;
+}
+.status-on { background: rgba(34, 197, 94, 0.2); color: #16a34a; }
+.status-off { background: rgba(248, 113, 113, 0.2); color: #dc2626; }
+
 .content { padding: 30px; }
 .section {
 background: var(--gray-100); border-radius: var(--radius);
@@ -232,6 +246,8 @@ animation: spin 1s ease-in-out infinite;
 <p class="subtitle">公告：亡客公益频道 @wangkela</p>
 <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
 <span class="version-badge">版本 13.0</span>
+<!-- 新增：版本状态显示 -->
+<div id="versionStatus">检测中...</div>
 </div>
 </div>
 
@@ -484,6 +500,7 @@ reloadBtn: document.getElementById('reloadBtn'),
 debugInfo: document.getElementById('debugInfo'),
 debugContent: document.getElementById('debugContent')
 };
+
 function startProgressMonitor() {
 const progressEl = document.getElementById('updateProgress');
 progressEl.style.display = 'block';
@@ -699,7 +716,7 @@ lines.push(`noCrosshair=${config.noAimAssist ? '1' : '0'}`);
 }
 
 lines.push(`fullBodyRange=${config.fullBody ? '1' : '0'}`);
-lines.push(`bodySize=${config.distance.toFixed(1)}身位`);  // 修改这里
+lines.push(`bodySize=${config.distance.toFixed(1)}身位`);
 
 // 头部范围
 if (config.ranges.head.enabled && config.ranges.head.value) {
@@ -1122,6 +1139,28 @@ initEventListeners();
 // 加载配置
 showMessage('正在加载配置...', 'info');
 await loadConfigFromFile();
+
+// ✅ 新增：页面加载完成后校验版本日期
+const versionStatusEl = document.getElementById('versionStatus');
+const latestTime = Number(document.querySelector('meta[name="module-version-time"]').getAttribute('content'));
+const checkVersionCb = 'checkVer_' + Date.now();
+
+window[checkVersionCb] = function (_, stdout) {
+const localTime = parseInt(stdout.trim()) || 0;
+if (localTime >= latestTime) {
+versionStatusEl.textContent = '已是最新版本';
+versionStatusEl.className = 'status-on';
+} else {
+versionStatusEl.textContent = '需要更新';
+versionStatusEl.className = 'status-off';
+}
+};
+
+ksu.exec(
+'cat /data/adb/modules/wangke/.update_success 2>/dev/null',
+'{}',
+checkVersionCb
+);
 });
 </script>
 </body>

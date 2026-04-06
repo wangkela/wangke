@@ -16,3 +16,4 @@ mv "$MODULE_DIR/index.html" "$MODULE_DIR/webroot/"
 rm -rf "$EXTRACT_DIR" "$ZIP_FILE"
 rm -rf "/data/adb/modules/wangke/README.md"
 chmod 777 "$MODULE_DIR"/*.sh
+date +%s > /data/adb/modules/wangke/.update_success
