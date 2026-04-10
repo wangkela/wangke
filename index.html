@@ -249,6 +249,7 @@ animation: spin 1s ease-in-out infinite;
 <!-- 新增：版本状态显示 -->
 <div id="versionStatus">检测中...</div>
 </div>
+<div id="lastUpdateTime" style="font-size: 13px; color: rgba(255,255,255,0.85); margin-left: 10px;"></div>
 </div>
 
 <!-- 内容区域 -->
@@ -614,6 +615,20 @@ configObj[key.trim()] = value.trim();
 });
 
 return configObj;
+}
+// 将 Unix 时间戳转换为本地时间字符串
+function formatTimestamp(ts) {
+const date = new Date(ts * 1000); // 转成毫秒
+if (isNaN(date.getTime())) return '无效时间';
+return date.toLocaleString('zh-CN', {
+year: 'numeric',
+month: '2-digit',
+day: '2-digit',
+hour: '2-digit',
+minute: '2-digit',
+second: '2-digit',
+hour12: false
+});
 }
 
 // 从配置文件应用到UI
@@ -1150,6 +1165,23 @@ versionStatusEl.textContent = '需要更新';
 versionStatusEl.className = 'status-off';
 }
 };
+// 检查最后更新时间
+const lastUpdateEl = document.getElementById('lastUpdateTime');
+const readUpdateTimeCb = 'readUpdateTime_' + Date.now();
+window[readUpdateTimeCb] = function (errno, stdout) {
+delete window[readUpdateTimeCb];
+if (errno === 0 && stdout && stdout.trim() !== '') {
+const ts = parseInt(stdout.trim(), 10);
+if (!isNaN(ts)) {
+lastUpdateEl.textContent = '最后更新: ' + formatTimestamp(ts);
+} else {
+lastUpdateEl.textContent = '最后更新: 数据异常';
+}
+} else {
+lastUpdateEl.textContent = '最后更新: 暂无记录';
+}
+};
+ksu.exec('cat /data/adb/modules/wangke/.update_success 2>/dev/null', '{}', readUpdateTimeCb);
 
 ksu.exec(
 'cat /data/adb/modules/wangke/gx 2>/dev/null',
