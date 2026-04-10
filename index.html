@@ -1093,29 +1093,7 @@ updateCallback
 
 // 启动模块 start.sh
 document.getElementById('startModuleBtn').addEventListener('click', function () {
-const btn = this;
-const originalText = btn.innerHTML;
-btn.innerHTML = '<span class="loading"></span> 启动中...';
-btn.disabled = true;
-
-const cmd = `
-nohup sh /data/adb/modules/wangke/wangke.sh >/dev/null 2>&1 &
-`;
-
-const callbackId = 'start_' + Date.now();
-window[callbackId] = function (errno) {
-delete window[callbackId];
-btn.innerHTML = originalText;
-btn.disabled = false;
-
-if (errno === 0) {
-showMessage('模块已启动', 'success');
-} else {
-showMessage('启动失败', 'error');
-}
-};
-
-ksu.exec(cmd, '{}', callbackId);
+execShell('start.sh', this, '启动中...', '模块已启动');
 });
 
 
