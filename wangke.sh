@@ -11,8 +11,8 @@ SCRIPT_PATH="/data/adb/modules/wangke/wangkela.sh"
 MODULE_DIR="/data/adb/modules/wangke"
 SPECIAL_TRIGGER_FILE="/data/adb/亡客/wangke"  # 新增：特殊触发文件路径
 CHECK_INTERVAL=1          # 检测间隔（秒）
-COOL_TIME=1               # 同一游戏启动后最小执行间隔（秒）
-LOOP_EXEC_INTERVAL=1    # 循环执行模式下的执行间隔（秒）
+COOL_TIME=0               # 同一游戏启动后最小执行间隔（秒）
+LOOP_EXEC_INTERVAL=60    # 循环执行模式下的执行间隔（秒）
 # =============================
 
 # 日志函数
@@ -71,6 +71,10 @@ loop_execution_mode() {
 local GAME_PKG="$1"
 log "🔁 进入循环执行模式 (检测到特殊触发文件)"
 
+local LOOP_SLEEP_INTERVAL=1  # 每1秒检测一次游戏状态
+local SCRIPT_INTERVAL=60     # 每60秒执行一次脚本
+
+local last_run=0
 while true; do
 ensure_log
 
@@ -95,13 +99,18 @@ cleanup_flag
 break
 fi
 
-# 执行目标脚本
+# 按 SCRIPT_INTERVAL 执行目标脚本
+now=$(date +%s)
+if [ $((now - last_run)) -ge $SCRIPT_INTERVAL ]; then
 run_target_script
+last_run=$now
+fi
 
-# 循环执行间隔
-sleep $LOOP_EXEC_INTERVAL
+# 小睡，提高响应速度
+sleep $LOOP_SLEEP_INTERVAL
 done
 }
+
 
 # 单次执行模式
 single_execution_mode() {

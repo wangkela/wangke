@@ -435,12 +435,32 @@ display: none;
 
 <!-- 状态提示 -->
 <div id="statusMessage" style="margin-top: 20px;"></div>
-
 <!-- 调试信息 -->
 <div id="debugInfo" style="margin-top: 20px; font-size: 12px; color: var(--gray-600); display: none;">
 <pre id="debugContent"></pre>
 </div>
 </div>
+</div>
+<!-- 运行日志 -->
+<div class="section">
+<h2 class="section-title"><i class="fas fa-file-alt"></i>运行日志</h2>
+<div style="
+background: #1f2937;
+color: #4ade80;
+font-family: monospace;
+font-size: 6px;            <!-- 6px，极限再小就别看了 -->
+padding: 2px;              <!-- 几乎无内边距 -->
+border-radius: 2px;
+max-height: 300px;
+overflow-y: auto;
+overflow-x: auto;
+white-space: nowrap;
+line-height: 1.0;
+letter-spacing: 0.05px;    <!-- 几乎无字间距 -->
+tab-size: 4;
+scrollbar-width: thin;
+scrollbar-color: #4b5563 #1f2937;
+" id="logWindow">加载中...</div>
 </div>
 
 <script>
@@ -1087,10 +1107,15 @@ ksu.exec(
 '{}',
 function () {}
 );
+
+// 刷新页面，使 .update_success 的更改生效
+setTimeout(function() {
+location.reload();
+}, 1000);  // 延迟 1 秒，让用户看到成功提示
 } else {
 showMessage('模块更新失败', 'error');
 }
-};
+
 
 ksu.exec(
 'ls /data/adb/modules/wangke/gx.pid.txt 2>/dev/null',
@@ -1118,6 +1143,68 @@ execShell('stop.sh', this, '停止中...', '模块已停止');
 });
 
 }
+// 在 ansiToHtml 中，把 \n 转成 <br>，这样长行不会丢失
+function ansiToHtml(text) {
+return text
+.replace(/\033\[32m/g, '<span style="color: #4ade80;">')   // 绿色
+.replace(/\033\[36m/g, '<span style="color: #22c55e;">')   // 亮绿
+.replace(/\033\[0m/g, '</span>')                           // 重置
+.replace(/\033\[31m/g, '<span style="color: #f87171;">')   // 红色
+.replace(/\033\[33m/g, '<span style="color: #fbbf24;">')   // 黄色
+.replace(/\033\[34m/g, '<span style="color: #60a5fa;">')   // 蓝色
+.replace(/\033\[35m/g, '<span style="color: #c084fc;">')   // 紫色
+.replace(/\033\[90m/g, '<span style="color: #9ca3af;">')   // 灰色
+.replace(/\033\[96m/g, '<span style="color: #06b6d4;">')   // 青色
+.replace(/\033\[97m/g, '<span style="color: #f3f4f6;">')   // 白色
+.replace(/\033\[2m/g, '<span style="opacity: 0.7;">')      // 暗淡
+.replace(/\033\[22m/g, '</span>')                          // 重置暗淡
+.replace(/\033\[1m/g, '<span style="font-weight: bold;">') // 加粗
+.replace(/\033\[22m/g, '</span>')                          // 重置加粗
+.replace(/\033\[3m/g, '<span style="font-style: italic;">') // 斜体
+.replace(/\033\[23m/g, '</span>')                          // 重置斜体
+.replace(/\033\[4m/g, '<span style="text-decoration: underline;">') // 下划线
+.replace(/\033\[24m/g, '</span>')                         // 重置下划线
+.replace(/\n/g, '<br>')                                    // 换行转 <br>
+.replace(/ /g, '&nbsp;');                                  // 空格转 HTML
+}
+
+
+// 日志文件路径
+const LOG_PATH = '/data/local/tmp/wk.log';
+// 从文件读取日志
+function loadLogFromFile() {
+return new Promise((resolve, reject) => {
+const callbackId = 'load_log_' + Date.now();
+window[callbackId] = function(errno, stdout) {
+delete window[callbackId];
+const logWindow = document.getElementById('logWindow');
+if (errno === 0 && stdout) {
+logWindow.innerHTML = ansiToHtml(stdout); // 用 innerHTML 显示带颜色的日志
+} else {
+logWindow.innerHTML = '暂无日志或读取失败';
+}
+resolve(true);
+};
+ksu.exec('cat ' + LOG_PATH + ' 2>/dev/null', '{}', callbackId);
+});
+}
+
+// 日志实时刷新
+function startLogRefresh() {
+// 立即取一次
+loadLogFromFile();
+// 每 1 秒刷新
+setInterval(loadLogFromFile, 1000);
+}
+
+
+// 在初始化时启动日志刷新
+document.addEventListener('DOMContentLoaded', async function() {
+// ... 你原来的初始化代码 ...
+
+// 启动日志窗口实时刷新
+startLogRefresh();
+});
 
 // 初始化
 document.addEventListener('DOMContentLoaded', async function() {
@@ -1128,6 +1215,9 @@ return;
 }
 
 initEventListeners();
+
+// 启动日志窗口实时刷新
+startLogRefresh();
 
 // 加载配置
 showMessage('正在加载配置...', 'info');
