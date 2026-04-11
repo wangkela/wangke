@@ -11,7 +11,7 @@ SCRIPT_PATH="/data/adb/modules/wangke/wangkela.sh"
 MODULE_DIR="/data/adb/modules/wangke"
 SPECIAL_TRIGGER_FILE="/data/adb/亡客/wangke"  # 新增：特殊触发文件路径
 CHECK_INTERVAL=1          # 检测间隔（秒）
-COOL_TIME=0               # 同一游戏启动后最小执行间隔（秒）
+COOL_TIME=1               # 同一游戏启动后最小执行间隔（秒）
 LOOP_EXEC_INTERVAL=60    # 循环执行模式下的执行间隔（秒）
 # =============================
 
