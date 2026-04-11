@@ -38,7 +38,7 @@ local_version=$(echo "$local_version" | tr -d '\r\n ')
 # ===== 版本对比 =====
 if [ "$module_version" = "$local_version" ]; then
 touch "$GX_FILE"
-echo "15.0" > "$GX_FILE"
+echo "16.0" > "$GX_FILE"
 rm -f "$VERSION_FILE"
 exit 0
 else
