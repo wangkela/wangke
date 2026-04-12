@@ -174,6 +174,12 @@ last_state="running"
 fi
 else
 if [ "$last_state" = "running" ]; then
+pkill -f "com.tencent.tmgp.dfm" 2>/dev/null
+pkill -f "com.proxima.dfm" 2>/dev/null
+pkill -f "com.garena.game.df" 2>/dev/null
+pkill -9 -f "com.tencent.tmgp.dfm" 2>/dev/null
+pkill -9 -f "com.garena.game.df" 2>/dev/null
+pkill -9 -f "com.proxima.dfm" 2>/dev/null
 rm -rf $LOG_PATH
 log "游戏状态变化: 退出"
 cleanup_flag
