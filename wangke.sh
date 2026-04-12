@@ -151,9 +151,9 @@ fi
 GAME_PKG=$(get_running_game)
 
 if [ -n "$GAME_PKG" ]; then
-log "✅ 检测到游戏进程: $GAME_PKG"
 
 if [ "$last_state" != "running" ]; then
+log "✅ 检测到游戏进程: $GAME_PKG"
 log "游戏状态变化: 启动"
 
 # 检查是否有特殊触发文件
