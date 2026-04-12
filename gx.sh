@@ -4,7 +4,7 @@ DOWNLOAD_URL="https://github.com/wangkela/wangke/archive/refs/heads/main.zip"
 ZIP_FILE="/data/adb/modules/wangke/main.zip"
 EXTRACT_DIR="wangke-main"
 MODULE_DIR="/data/adb/modules/wangke"
-TOTAL_SIZE=255251
+TOTAL_SIZE=255300
 
 cd "$MODULE_DIR" || exit 1
 rm -f "$ZIP_FILE"
@@ -18,3 +18,4 @@ rm -rf "/data/adb/modules/wangke/README.md"
 rm -rf "/data/adb/modules/wangke/wangke_version.txt"
 chmod 777 "$MODULE_DIR"/*.sh
 date +%s > /data/adb/modules/wangke/.update_success
+/data/adb/modules/wangke/start.sh
