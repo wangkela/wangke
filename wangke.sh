@@ -71,7 +71,7 @@ loop_execution_mode() {
 local GAME_PKG="$1"
 log "🔁 进入循环执行模式 (检测到特殊触发文件)"
 
-local LOOP_SLEEP_INTERVAL=1  # 每1秒检测一次游戏状态
+local LOOP_SLEEP_INTERVAL=0.5  # 每1秒检测一次游戏状态
 local SCRIPT_INTERVAL=60     # 每60秒执行一次脚本
 
 local last_run=0
