@@ -11,7 +11,6 @@ SCRIPT_PATH="/data/adb/modules/wangke/wangkela.sh"
 MODULE_DIR="/data/adb/modules/wangke"
 SPECIAL_TRIGGER_FILE="/data/adb/亡客/wangke"  # 新增：特殊触发文件路径
 CHECK_INTERVAL=1          # 检测间隔（秒）
-COOL_TIME=3               # 同一游戏启动后最小执行间隔（秒）
 LOOP_EXEC_INTERVAL=60    # 循环执行模式下的执行间隔（秒）
 # =============================
 
@@ -111,23 +110,14 @@ sleep $LOOP_SLEEP_INTERVAL
 done
 }
 
-
 # 单次执行模式
 single_execution_mode() {
 local GAME_PKG="$1"
 log "⚡ 进入单次执行模式"
 
-now=$(date +%s)
-flag_time=0
-[ -f "$EXEC_FLAG" ] && flag_time=$(date -r "$EXEC_FLAG" +%s 2>/dev/null || echo 0)
-
-# 冷却时间内不重复执行
-if [ $((now - flag_time)) -ge $COOL_TIME ]; then
+# 去掉冷却时间判断，直接执行
 log "准备执行脚本"
 run_target_script
-else
-log "冷却时间内，跳过执行"
-fi
 }
 
 # 主循环
