@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- 新增：用于存放最新版本的时间戳（Unix Time），更新时修改此值 -->
 <meta name="module-version-time" content="1700000000">
-<title>亡客控制面板 v19.0</title>
+<title>亡客控制面板 v20.0</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
 /* 保持原有的CSS样式不变 */
@@ -245,7 +245,7 @@ animation: spin 1s ease-in-out infinite;
 <h1><i class="fas fa-gamepad"></i>亡客控制面板</h1>
 <p class="subtitle">公告：亡客公益频道 @wangkela</p>
 <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
-<span class="version-badge">版本 19.0</span>
+<span class="version-badge">版本 20.0</span>
 <!-- 新增：版本状态显示 -->
 <div id="versionStatus">检测中...</div>
 </div>
@@ -409,7 +409,7 @@ min="0.5" max="2.5" step="0.5" value="1.0">
 <button class="btn" id="reloadBtn" style="background: var(--warning); color: white;">
 <i class="fas fa-sync-alt"></i>重新加载
 </button>
-<!-- 模块控制按钮 -->
+<!-- 在操作按钮区域添加这两个按钮 -->
 <div class="action-buttons" style="margin-top: 15px;">
 <button class="btn" id="updateModuleBtn" style="background: linear-gradient(90deg, #06b6d4, #0891b2); color: white;">
 <i class="fas fa-cloud-download-alt"></i>更新模块
@@ -431,6 +431,28 @@ display: none;
 <button class="btn" id="stopModuleBtn" style="background: linear-gradient(90deg, var(--danger), #ef4444); color: white;">
 <i class="fas fa-stop"></i>停止模块
 </button>
+
+<!-- 新增：驱动选择区域 -->
+<div class="action-buttons" style="margin-top: 15px; flex-wrap: wrap;">
+<div style="display: flex; flex-direction: column; width: 100%; margin-bottom: 10px;">
+<label for="driverSelect" style="font-weight: 600; margin-bottom: 5px;">
+<i class="fas fa-cogs"></i> 选择驱动
+</label>
+<select id="driverSelect" style="
+padding: 10px;
+border-radius: 8px;
+border: 2px solid var(--gray-200);
+font-size: 15px;
+width: 100%;
+">
+<option value="">-- 请选择驱动 --</option>
+</select>
+</div>
+<button class="btn" id="installDriverBtn" style="background: linear-gradient(90deg, #8b5cf6, #7c3aed); color: white;">
+<i class="fas fa-microchip"></i> 刷入驱动
+</button>
+</div>
+
 </div>
 
 <!-- 状态提示 -->
@@ -472,6 +494,9 @@ const MODULE_DIR = '/data/adb/亡客';
 const MODULE_DIR1 = '/data/adb/modules/wangke';
 const CONFIG_PATH = MODULE_DIR + '/pz.ini';
 const WANGKE_FILE = MODULE_DIR + '/wangke';
+// 驱动目录
+const RTDEV_DIR = '/data/adb/modules/wangke/rtdev';
+const RTHOOK_DIR = '/data/adb/modules/wangke/rthook';
 
 // 配置状态
 const config = {
@@ -521,6 +546,9 @@ reloadBtn: document.getElementById('reloadBtn'),
 debugInfo: document.getElementById('debugInfo'),
 debugContent: document.getElementById('debugContent')
 };
+
+// 驱动选择下拉框
+const driverSelect = document.getElementById('driverSelect');
 
 function startProgressMonitor() {
 const progressEl = document.getElementById('updateProgress');
@@ -911,6 +939,71 @@ inputElement.focus();
 }
 }
 
+// 通用 Shell 执行函数（可传入自定义脚本路径）
+function execShellCustom(scriptPath, btn, loadingText, successMsg) {
+const originalText = btn.innerHTML;
+btn.innerHTML = `<span class="loading"></span> ${loadingText}`;
+btn.disabled = true;
+
+const callbackId = 'shell_custom_' + Date.now();
+window[callbackId] = function (errno) {
+delete window[callbackId];
+btn.innerHTML = originalText;
+btn.disabled = false;
+
+if (errno === 0) {
+showMessage(successMsg, 'success');
+} else {
+showMessage(`${driverSelect.options[driverSelect.selectedIndex].text} 执行失败`, 'error');
+}
+};
+
+ksu.exec(`sh ${scriptPath}`, '{}', callbackId);
+}
+
+// 加载驱动列表并填充下拉框
+async function loadDriverList() {
+const list = [];
+
+// 读取 rtdev 目录
+await new Promise(resolve => {
+const cb = 'rtdev_' + Date.now();
+window[cb] = (errno, stdout) => {
+delete window[cb];
+if (errno === 0 && stdout) {
+const files = stdout.trim().split('\n').filter(f => f.endsWith('.sh'));
+files.forEach(f => list.push({ dir: RTDEV_DIR, file: f, name: '[RTDev] ' + f }));
+}
+resolve();
+};
+ksu.exec('ls ' + RTDEV_DIR + ' 2>/dev/null', '{}', cb);
+});
+
+// 读取 rthook 目录
+await new Promise(resolve => {
+const cb = 'rthook_' + Date.now();
+window[cb] = (errno, stdout) => {
+delete window[cb];
+if (errno === 0 && stdout) {
+const files = stdout.trim().split('\n').filter(f => f.endsWith('.sh'));
+files.forEach(f => list.push({ dir: RTHOOK_DIR, file: f, name: '[RTHook] ' + f }));
+}
+resolve();
+};
+ksu.exec('ls ' + RTHOOK_DIR + ' 2>/dev/null', '{}', cb);
+});
+
+// 清空并填充下拉框
+driverSelect.innerHTML = '<option value="">-- 请选择驱动 --</option>';
+list.forEach(item => {
+const opt = document.createElement('option');
+opt.value = JSON.stringify(item); // 存储完整信息
+opt.textContent = item.name;
+driverSelect.appendChild(opt);
+});
+}
+
+
 // 事件监听
 function initEventListeners() {
 // 全枪无后开关
@@ -1051,26 +1144,7 @@ await loadConfigFromFile();
 this.innerHTML = originalText;
 this.disabled = false;
 });
-function execShell(scriptName, btn, loadingText, successMsg) {
-const originalText = btn.innerHTML;
-btn.innerHTML = `<span class="loading"></span> ${loadingText}`;
-btn.disabled = true;
 
-const callbackId = 'shell_' + Date.now();
-window[callbackId] = function (errno) {
-delete window[callbackId];
-btn.innerHTML = originalText;
-btn.disabled = false;
-
-if (errno === 0) {
-showMessage(successMsg, 'success');
-} else {
-showMessage(`${scriptName} 执行失败`, 'error');
-}
-};
-
-ksu.exec(`sh ${MODULE_DIR1}/${scriptName}`, '{}', callbackId);
-}
 
 // 更新模块 gx.sh
 document.getElementById('updateModuleBtn').addEventListener('click', function () {
@@ -1133,14 +1207,31 @@ updateCallback
 
 // 启动模块 start.sh
 document.getElementById('startModuleBtn').addEventListener('click', function () {
-execShell('start.sh', this, '启动中...', '模块已启动');
+execShellCustom('/data/adb/modules/wangke/start.sh', this, '启动中...', '模块已启动');
 });
 
 
 // 停止模块 stop.sh
 document.getElementById('stopModuleBtn').addEventListener('click', function () {
-execShell('stop.sh', this, '停止中...', '模块已停止');
+execShellCustom('/data/adb/modules/wangke/stop.sh', this, '停止中...', '模块已停止');
 });
+
+
+// 刷入驱动按钮点击事件
+document.getElementById('installDriverBtn').addEventListener('click', function () {
+const selected = driverSelect.value;
+if (!selected) {
+showMessage('请先选择一个驱动', 'warning');
+return;
+}
+
+const driverInfo = JSON.parse(selected);
+const scriptPath = driverInfo.dir + '/' + driverInfo.file;
+
+execShellCustom(scriptPath, this, '刷入中...', `${driverInfo.name} 刷入成功`);
+});
+
+
 
 }
 // 在 ansiToHtml 中，把 \n 转成 <br>，这样长行不会丢失
@@ -1278,6 +1369,9 @@ ksu.exec(
 '{}',
 checkVersionCb
 );
+
+// 加载驱动列表
+await loadDriverList();
 });
 </script>
 </body>
