@@ -9,10 +9,14 @@ LOG_PATH="/data/local/tmp/wk.log"
 EXEC_FLAG="/data/local/tmp/wk_executed.flag"
 SCRIPT_PATH="/data/adb/modules/wangke/wangkela.sh"
 MODULE_DIR="/data/adb/modules/wangke"
-SPECIAL_TRIGGER_FILE="/data/adb/亡客/wangke"  # 新增：特殊触发文件路径
-CHECK_INTERVAL=0.5          # 检测间隔（秒）
-LOOP_EXEC_INTERVAL=60    # 循环执行模式下的执行间隔（秒）
+SPECIAL_TRIGGER_FILE="/data/adb/亡客/wangke"
+CHECK_INTERVAL=0.5          # 主循环检测间隔（秒）
+LOOP_EXEC_INTERVAL=60       # 循环执行模式下的脚本执行间隔（秒）
+LOOP_SLEEP_INTERVAL=0.5     # 循环模式内的休眠间隔（秒），调大以提高稳定性
 # =============================
+
+# 全局变量：跟踪循环模式的子进程PID，防止残留
+LOOP_PID=""
 
 # 日志函数
 log() {
@@ -36,15 +40,18 @@ check_special_trigger() {
 [ -f "$SPECIAL_TRIGGER_FILE" ]
 }
 
-# 检测游戏是否运行，返回包名或空
+# 检测游戏是否运行，返回包名或空（优化版：使用pidof，减少su调用次数）
 get_running_game() {
+local out=$(su -c "ps -A -o CMDLINE | grep -E '^com\\.tencent\\.tmgp\\.dfm|^com\\.proxima\\.dfm|^com\\.garena\\.game\\.df'")
 for PKG in $TARGET_APP_PKGS; do
-if su -c "ps -A | grep -w '$PKG' | grep -qv grep" >/dev/null 2>&1; then
+if echo "$out" | grep -q "^$PKG"; then
 echo "$PKG"
 return
 fi
 done
+echo ""
 }
+
 
 # 清理标记
 cleanup_flag() {
@@ -57,7 +64,6 @@ if [ ! -f "$SCRIPT_PATH" ]; then
 log "目标脚本不存在: $SCRIPT_PATH"
 return
 fi
-# 确保可读可执行
 chmod 777 "$SCRIPT_PATH" 2>/dev/null
 log "执行 $SCRIPT_PATH"
 sleep 1s
@@ -66,13 +72,13 @@ touch "$EXEC_FLAG"
 log "脚本执行完成"
 }
 
-# 循环执行模式
+# 循环执行模式（独立子进程）
 loop_execution_mode() {
 local GAME_PKG="$1"
 log "🔁 进入循环执行模式 (检测到特殊触发文件)"
 
-local LOOP_SLEEP_INTERVAL=0.5  # 每1秒检测一次游戏状态
-local SCRIPT_INTERVAL=60     # 每60秒执行一次脚本
+# 设置陷阱：当父进程退出或脚本被终止时，此子进程也自动退出
+trap 'log "循环模式子进程收到终止信号，退出"; exit 0' EXIT INT TERM
 
 local last_run=0
 while true; do
@@ -101,12 +107,12 @@ fi
 
 # 按 SCRIPT_INTERVAL 执行目标脚本
 now=$(date +%s)
-if [ $((now - last_run)) -ge $SCRIPT_INTERVAL ]; then
+if [ $((now - last_run)) -ge $LOOP_EXEC_INTERVAL ]; then
 run_target_script
 last_run=$now
 fi
 
-# 小睡，提高响应速度
+# 休眠，减少CPU占用并提高系统调度稳定性
 sleep $LOOP_SLEEP_INTERVAL
 done
 }
@@ -115,8 +121,6 @@ done
 single_execution_mode() {
 local GAME_PKG="$1"
 log "⚡ 进入单次执行模式"
-
-# 去掉冷却时间判断，直接执行
 log "准备执行脚本"
 run_target_script
 }
@@ -127,47 +131,62 @@ ensure_log
 log "🚀 模块启动"
 
 last_state=""
-in_loop_mode=false
+# LOOP_PID="" 已在全局初始化
 
 while true; do
 ensure_log
 
-# 模块被移除则退出
+# 模块被移除则退出主循环
 if ! check_module_exists; then
-log "模块目录不存在，退出循环"
+log "模块目录不存在，退出主循环"
 cleanup_flag
+# 确保终止所有残留的循环子进程
+if [ -n "$LOOP_PID" ] && ps -p "$LOOP_PID" >/dev/null 2>&1; then
+kill "$LOOP_PID" 2>/dev/null
+wait "$LOOP_PID" 2>/dev/null
+fi
 break
 fi
 
-GAME_PKG=$(get_running_game)
+CURRENT_GAME=$(get_running_game)
 
-if [ -n "$GAME_PKG" ]; then
-
+if [ -n "$CURRENT_GAME" ]; then
+# 游戏状态：运行中
 if [ "$last_state" != "running" ]; then
-log "✅ 检测到游戏进程: $GAME_PKG"
+log "✅ 检测到游戏进程: $CURRENT_GAME"
 log "游戏状态变化: 启动"
 
 # 检查是否有特殊触发文件
 if check_special_trigger; then
-# 进入循环执行模式
-in_loop_mode=true
-loop_execution_mode "$GAME_PKG" &
-loop_pid=$!
-# 等待循环执行模式结束
-wait $loop_pid 2>/dev/null
-in_loop_mode=false
-else
-# 单次执行模式
-single_execution_mode "$GAME_PKG"
+# --- 进入循环执行模式 ---
+# 关键：先清理旧的子进程，防止多个循环模式叠加
+if [ -n "$LOOP_PID" ] && ps -p "$LOOP_PID" >/dev/null 2>&1; then
+log "检测到旧循环进程 ($LOOP_PID)，正在终止..."
+kill "$LOOP_PID" 2>/dev/null
+wait "$LOOP_PID" 2>/dev/null
 fi
-
+# 启动新的循环子进程
+loop_execution_mode "$CURRENT_GAME" &
+LOOP_PID=$!  # 记录新子进程PID
+log "循环执行模式已启动，子进程PID: $LOOP_PID"
+else
+# --- 进入单次执行模式 ---
+single_execution_mode "$CURRENT_GAME"
+fi
 last_state="running"
 fi
 else
+# 游戏状态：未运行
 if [ "$last_state" = "running" ]; then
-rm -rf $LOG_PATH
 log "游戏状态变化: 退出"
 cleanup_flag
+# 游戏退出时，终止循环子进程
+if [ -n "$LOOP_PID" ] && ps -p "$LOOP_PID" >/dev/null 2>&1; then
+log "游戏已退出，终止循环子进程 ($LOOP_PID)..."
+kill "$LOOP_PID" 2>/dev/null
+wait "$LOOP_PID" 2>/dev/null
+LOOP_PID=""  # 清空PID
+fi
 fi
 last_state="stopped"
 fi
