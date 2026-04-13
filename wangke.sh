@@ -60,6 +60,7 @@ fi
 # 确保可读可执行
 chmod 777 "$SCRIPT_PATH" 2>/dev/null
 log "执行 $SCRIPT_PATH"
+sleep 1s
 "$SCRIPT_PATH" >> "$LOG_PATH" 2>&1
 touch "$EXEC_FLAG"
 log "脚本执行完成"
@@ -164,12 +165,6 @@ last_state="running"
 fi
 else
 if [ "$last_state" = "running" ]; then
-pkill -f "com.tencent.tmgp.dfm" 2>/dev/null
-pkill -f "com.proxima.dfm" 2>/dev/null
-pkill -f "com.garena.game.df" 2>/dev/null
-pkill -9 -f "com.tencent.tmgp.dfm" 2>/dev/null
-pkill -9 -f "com.garena.game.df" 2>/dev/null
-pkill -9 -f "com.proxima.dfm" 2>/dev/null
 rm -rf $LOG_PATH
 log "游戏状态变化: 退出"
 cleanup_flag
@@ -183,6 +178,11 @@ done
 
 # 捕获 SIGTERM 用于安全退出
 trap 'log "收到终止信号，退出"; cleanup_flag; exit 0' INT TERM
-
+pkill -f "com.tencent.tmgp.dfm" 2>/dev/null
+pkill -f "com.proxima.dfm" 2>/dev/null
+pkill -f "com.garena.game.df" 2>/dev/null
+pkill -9 -f "com.tencent.tmgp.dfm" 2>/dev/null
+pkill -9 -f "com.garena.game.df" 2>/dev/null
+pkill -9 -f "com.proxima.dfm" 2>/dev/null
 # 启动主循环
 main_loop
