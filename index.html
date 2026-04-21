@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- 新增：用于存放最新版本的时间戳（Unix Time），更新时修改此值 -->
 <meta name="module-version-time" content="1700000000">
-<title>亡客控制面板 v22.0</title>
+<title>亡客控制面板 v23.0</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
 /* 保持原有的CSS样式不变 */
@@ -245,7 +245,7 @@ animation: spin 1s ease-in-out infinite;
 <h1><i class="fas fa-gamepad"></i>亡客控制面板</h1>
 <p class="subtitle">公告：亡客公益频道 @wangkela</p>
 <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
-<span class="version-badge">版本 22.0</span>
+<span class="version-badge">版本 23.0</span>
 <!-- 新增：版本状态显示 -->
 <div id="versionStatus">检测中...</div>
 </div>
@@ -258,16 +258,16 @@ animation: spin 1s ease-in-out infinite;
 <div class="section">
 <h2 class="section-title"><i class="fas fa-sliders-h"></i>核心功能控制</h2>
 <div class="controls-grid">
-<!-- 全枪无后 -->
+<!-- 无效功能 -->
 <div class="control-card" id="noRecoilCard">
 <div class="control-header">
-<span class="control-label">全枪无后</span>
+<span class="control-label">无效功能</span>
 <label class="switch">
 <input type="checkbox" id="noRecoilSwitch" data-func="no_recoil">
 <span class="slider"></span>
 </label>
 </div>
-<p class="control-desc">开启后将禁用所有武器的后坐力效果</p>
+<p class="control-desc">原全枪无后 已失效</p>
 <div class="status-indicator status-off" id="noRecoilStatus">已关闭</div>
 </div>
 
@@ -683,7 +683,7 @@ hour12: false
 function applyConfigToUI(configData) {
 console.log('应用配置到UI:', configData);
 
-// 1. 全枪无后
+// 1. 无效功能
 if (configData.allGunNoRecoil) {
 config.noRecoil = configData.allGunNoRecoil === '1';
 elements.noRecoilSwitch.checked = config.noRecoil;
@@ -1036,7 +1036,7 @@ driverSelect.appendChild(opt);
 
 // 事件监听
 function initEventListeners() {
-// 全枪无后开关
+// 无效功能开关
 elements.noRecoilSwitch.addEventListener('change', function() {
 config.noRecoil = this.checked;
 updateStatus();
