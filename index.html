@@ -333,20 +333,20 @@ min="0.5" max="2.5" step="0.5" value="1.0">
 </div>
 <!-- 露娜透视 -->
 <div class="section">
-  <h2 class="section-title"><i class="fas fa-eye"></i>露娜透视</h2>
-  <div class="controls-grid">
-    <div class="control-card" id="lunaCard">
-      <div class="control-header">
-        <span class="control-label">露娜透视</span>
-        <label class="switch">
-          <input type="checkbox" id="lunaSwitch">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <p class="control-desc">命中敌人时显示透视效果</p>
-      <div class="status-indicator status-off" id="lunaStatus">已关闭</div>
-    </div>
-  </div>
+<h2 class="section-title"><i class="fas fa-eye"></i>露娜透视</h2>
+<div class="controls-grid">
+<div class="control-card" id="lunaCard">
+<div class="control-header">
+<span class="control-label">露娜透视</span>
+<label class="switch">
+<input type="checkbox" id="lunaSwitch">
+<span class="slider"></span>
+</label>
+</div>
+<p class="control-desc">命中敌人时显示透视效果</p>
+<div class="status-indicator status-off" id="lunaStatus">已关闭</div>
+</div>
+</div>
 </div>
 
 <!-- 范围设置 -->
@@ -517,11 +517,11 @@ const RTHOOK_DIR = '/data/adb/modules/wangke/rthook';
 
 // 配置状态
 const config = {
-  noRecoil: false, 
-  aimAssist: false,
-  noAimAssist: false,
-  fullBody: false,
-  distance: 1.0,
+noRecoil: false, 
+aimAssist: false,
+noAimAssist: false,
+fullBody: false,
+distance: 1.0,
 lunaEsp: false,
 ranges: {
 head: { enabled: false, value: '' },
@@ -739,6 +739,12 @@ elements.distanceValue.textContent = distance.toFixed(1);
 }
 }
 
+// 10. 露娜透视
+if (configData.lunaESP) {
+config.lunaEsp = configData.lunaESP === '1';
+document.getElementById('lunaSwitch').checked = config.lunaEsp;
+}
+
 // 6. 头部范围
 if (configData.headRange) {
 const [enabled, value] = configData.headRange.split(':');
@@ -903,6 +909,9 @@ resolve(false);
 }
 } else {
 showMessage('配置文件不存在或读取失败', 'warning');
+config.lunaEsp = false;
+document.getElementById('lunaSwitch').checked = false;
+updateStatus();
 resolve(false);
 }
 };
@@ -1106,8 +1115,8 @@ elements.distanceValue.textContent = value.toFixed(1);
 
 // 露娜透视开关
 document.getElementById('lunaSwitch').addEventListener('change', function () {
-    config.lunaEsp = this.checked;
-    updateStatus();
+config.lunaEsp = this.checked;
+updateStatus();
 });
 
 // 头部范围开关
