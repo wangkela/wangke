@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- 新增：用于存放最新版本的时间戳（Unix Time），更新时修改此值 -->
 <meta name="module-version-time" content="1700000000">
-<title>亡客控制面板 v23.0</title>
+<title>亡客控制面板 v24.0</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
 /* 保持原有的CSS样式不变 */
@@ -245,7 +245,7 @@ animation: spin 1s ease-in-out infinite;
 <h1><i class="fas fa-gamepad"></i>亡客控制面板</h1>
 <p class="subtitle">公告：亡客公益频道 @wangkela</p>
 <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
-<span class="version-badge">版本 23.0</span>
+<span class="version-badge">版本 24.0</span>
 <!-- 新增：版本状态显示 -->
 <div id="versionStatus">检测中...</div>
 </div>
@@ -258,16 +258,16 @@ animation: spin 1s ease-in-out infinite;
 <div class="section">
 <h2 class="section-title"><i class="fas fa-sliders-h"></i>核心功能控制</h2>
 <div class="controls-grid">
-<!-- 无效功能 -->
+<!-- 全枪无后 -->
 <div class="control-card" id="noRecoilCard">
 <div class="control-header">
-<span class="control-label">无效功能</span>
+<span class="control-label">全枪无后</span>
 <label class="switch">
 <input type="checkbox" id="noRecoilSwitch" data-func="no_recoil">
 <span class="slider"></span>
 </label>
 </div>
-<p class="control-desc">原全枪无后 已失效</p>
+<p class="control-desc">开启后去除所有武器后坐力效果</p>
 <div class="status-indicator status-off" id="noRecoilStatus">已关闭</div>
 </div>
 
@@ -330,6 +330,23 @@ min="0.5" max="2.5" step="0.5" value="1.0">
 </div>
 </div>
 </div>
+</div>
+<!-- 露娜透视 -->
+<div class="section">
+  <h2 class="section-title"><i class="fas fa-eye"></i>露娜透视</h2>
+  <div class="controls-grid">
+    <div class="control-card" id="lunaCard">
+      <div class="control-header">
+        <span class="control-label">露娜透视</span>
+        <label class="switch">
+          <input type="checkbox" id="lunaSwitch">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <p class="control-desc">命中敌人时显示透视效果</p>
+      <div class="status-indicator status-off" id="lunaStatus">已关闭</div>
+    </div>
+  </div>
 </div>
 
 <!-- 范围设置 -->
@@ -500,11 +517,12 @@ const RTHOOK_DIR = '/data/adb/modules/wangke/rthook';
 
 // 配置状态
 const config = {
-noRecoil: false,
-aimAssist: false,
-noAimAssist: false,
-fullBody: false,
-distance: 1.0,
+  noRecoil: false, 
+  aimAssist: false,
+  noAimAssist: false,
+  fullBody: false,
+  distance: 1.0,
+lunaEsp: false,
 ranges: {
 head: { enabled: false, value: '' },
 chest: { enabled: false, value: '' },
@@ -620,6 +638,10 @@ document.getElementById('noAimAssistStatus').className = `status-indicator ${con
 document.getElementById('fullBodyStatus').textContent = config.fullBody ? '已开启' : '已关闭';
 document.getElementById('fullBodyStatus').className = `status-indicator ${config.fullBody ? 'status-on' : 'status-off'}`;
 
+document.getElementById('lunaStatus').textContent = config.lunaEsp ? '已开启' : '已关闭';
+document.getElementById('lunaStatus').className = `status-indicator ${config.lunaEsp ? 'status-on' : 'status-off'}`;
+document.getElementById('lunaCard').classList.toggle('active', config.lunaEsp);
+
 // 更新卡片激活状态
 document.getElementById('noRecoilCard').classList.toggle('active', config.noRecoil);
 document.getElementById('aimAssistCard').classList.toggle('active', config.aimAssist);
@@ -683,7 +705,7 @@ hour12: false
 function applyConfigToUI(configData) {
 console.log('应用配置到UI:', configData);
 
-// 1. 无效功能
+// 1. 全枪无后
 if (configData.allGunNoRecoil) {
 config.noRecoil = configData.allGunNoRecoil === '1';
 elements.noRecoilSwitch.checked = config.noRecoil;
@@ -780,6 +802,9 @@ lines.push(`noCrosshair=${config.noAimAssist ? '1' : '0'}`);
 
 lines.push(`fullBodyRange=${config.fullBody ? '1' : '0'}`);
 lines.push(`bodySize=${config.distance.toFixed(1)}身位`);
+
+// 露娜透视
+lines.push(`lunaESP=${config.lunaEsp ? '1' : '0'}`);
 
 // 头部范围
 if (config.ranges.head.enabled && config.ranges.head.value) {
@@ -1036,7 +1061,7 @@ driverSelect.appendChild(opt);
 
 // 事件监听
 function initEventListeners() {
-// 无效功能开关
+// 全枪开关
 elements.noRecoilSwitch.addEventListener('change', function() {
 config.noRecoil = this.checked;
 updateStatus();
@@ -1077,6 +1102,12 @@ elements.distanceSlider.addEventListener('input', function() {
 const value = parseFloat(this.value);
 config.distance = value;
 elements.distanceValue.textContent = value.toFixed(1);
+});
+
+// 露娜透视开关
+document.getElementById('lunaSwitch').addEventListener('change', function () {
+    config.lunaEsp = this.checked;
+    updateStatus();
 });
 
 // 头部范围开关
